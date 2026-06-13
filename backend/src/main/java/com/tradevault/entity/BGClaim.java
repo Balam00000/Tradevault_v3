@@ -4,9 +4,17 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.tradevault.entity.enums.BGClaimStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import lombok.*;
 
 @Entity
 @Table(name = "bg_claims")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class BGClaim {
 
     @Id
@@ -26,8 +34,16 @@ public class BGClaim {
     @Column(name = "claim_date", nullable = false)
     private LocalDate claimDate;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(length = 30)
-    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
+    private BGClaimStatus status = BGClaimStatus.PENDING; // PENDING, APPROVED, REJECTED
+
+    @Column(name = "claimant_details", length = 150)
+    private String claimantDetails;
+
+    @Column(name = "reviewed_by_id")
+    private Long reviewedById;
 
     @Column(name = "payment_details", columnDefinition = "TEXT")
     private String paymentDetails;
@@ -35,30 +51,6 @@ public class BGClaim {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public BGClaim() {}
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
 
-    public BankGuarantee getBg() { return bg; }
-    public void setBg(BankGuarantee bg) { this.bg = bg; }
-
-    public String getClaimRef() { return claimRef; }
-    public void setClaimRef(String claimRef) { this.claimRef = claimRef; }
-
-    public BigDecimal getAmount() { return amount; }
-    public void setAmount(BigDecimal amount) { this.amount = amount; }
-
-    public LocalDate getClaimDate() { return claimDate; }
-    public void setClaimDate(LocalDate claimDate) { this.claimDate = claimDate; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public String getPaymentDetails() { return paymentDetails; }
-    public void setPaymentDetails(String paymentDetails) { this.paymentDetails = paymentDetails; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -6,9 +6,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+import com.tradevault.entity.enums.NotificationStatus;
+
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     List<Notification> findByUserIdOrderByCreatedAtDesc(Long userId);
-    List<Notification> findByUserIdAndIsReadOrderByCreatedAtDesc(Long userId, Boolean isRead);
-    long countByUserIdAndIsRead(Long userId, Boolean isRead);
+    List<Notification> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, NotificationStatus status);
+    long countByUserIdAndStatus(Long userId, NotificationStatus status);
 }

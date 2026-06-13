@@ -2,6 +2,7 @@ package com.tradevault.config;
 
 import com.tradevault.entity.CorporateClient;
 import com.tradevault.entity.User;
+import com.tradevault.entity.enums.UserStatus;
 import com.tradevault.repository.CorporateClientRepository;
 import com.tradevault.repository.UserRepository;
 import org.slf4j.Logger;
@@ -59,7 +60,7 @@ public class DatabaseSeedInitializer implements CommandLineRunner {
             }
 
             user.setRole(role);
-            user.setStatus("ACTIVE");
+            user.setStatus(UserStatus.ACTIVE);
             user.setPassword(passwordEncoder.encode("password"));
 
             // Map 'client' user to Corporate Client 1 (Acme)

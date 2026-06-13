@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `full_name` VARCHAR(100) NOT NULL,
   `role` VARCHAR(30) NOT NULL, -- CLIENT, OPERATIONS, RELATIONSHIP_MANAGER, TREASURY, COMPLIANCE, ADMIN
   `status` VARCHAR(20) DEFAULT 'ACTIVE',
+  `branch_id` VARCHAR(50) NULL,
+  `corporate_client_id` BIGINT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX `idx_username` (`username`),
@@ -27,6 +29,8 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
   `action` VARCHAR(100) NOT NULL,
   `details` TEXT,
   `ip_address` VARCHAR(45) NULL,
+  `entity_type` VARCHAR(50) NULL,
+  `record_id` BIGINT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_username_audit` (`username`),
   INDEX `idx_timestamp` (`timestamp`)
@@ -39,6 +43,10 @@ CREATE TABLE IF NOT EXISTS `corporate_clients` (
   `tax_id` VARCHAR(50) UNIQUE NOT NULL,
   `country` VARCHAR(50) NOT NULL,
   `status` VARCHAR(30) DEFAULT 'ACTIVE',
+  `registration_number` VARCHAR(50) NULL,
+  `industry` VARCHAR(100) NULL,
+  `relationship_manager_id` BIGINT NULL,
+  `kyc_status` VARCHAR(30) DEFAULT 'PENDING',
   `credit_limit` DECIMAL(15, 2) NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -55,6 +63,8 @@ CREATE TABLE IF NOT EXISTS `credit_facilities` (
   `currency` VARCHAR(3) DEFAULT 'USD',
   `status` VARCHAR(30) DEFAULT 'ACTIVE',
   `expiry_date` DATE NOT NULL,
+  `collateral_type` VARCHAR(100) NULL,
+  `collateral_value` DECIMAL(15, 2) NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`client_id`) REFERENCES `corporate_clients` (`id`) ON DELETE CASCADE,
   INDEX `idx_facility_client` (`client_id`)
@@ -66,11 +76,12 @@ CREATE TABLE IF NOT EXISTS `letters_of_credit` (
   `client_id` BIGINT NOT NULL,
   `credit_facility_id` BIGINT NOT NULL,
   `lc_number` VARCHAR(50) UNIQUE NOT NULL,
-  `lc_type` VARCHAR(30) NOT NULL, -- SIGHT, USANCE
+  `lc_type` VARCHAR(30) NOT NULL, -- SIGHT, USANCE, REVOLVING, STANDBY
   `amount` DECIMAL(15, 2) NOT NULL,
   `currency` VARCHAR(3) DEFAULT 'USD',
   `applicant_name` VARCHAR(150) NOT NULL,
   `beneficiary_name` VARCHAR(150) NOT NULL,
+  `beneficiary_country` VARCHAR(100) NULL,
   `issue_date` DATE NOT NULL,
   `expiry_date` DATE NOT NULL,
   `status` VARCHAR(30) DEFAULT 'DRAFT', -- DRAFT, IN_REVIEW, APPROVED, REJECTED, ACTIVE, AMENDED, DRAWN, EXPIRED, CLOSED
@@ -95,6 +106,9 @@ CREATE TABLE IF NOT EXISTS `lc_amendments` (
   `previous_expiry_date` DATE NOT NULL,
   `new_expiry_date` DATE NOT NULL,
   `status` VARCHAR(30) DEFAULT 'PENDING_APPROVAL', -- PENDING_APPROVAL, APPROVED, REJECTED
+  `amendment_type` VARCHAR(30) DEFAULT 'OTHER',
+  `requested_by_id` BIGINT NULL,
+  `approved_by_id` BIGINT NULL,
   `justification` TEXT NULL,
   `created_by` VARCHAR(50) NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -130,6 +144,7 @@ CREATE TABLE IF NOT EXISTS `bank_guarantees` (
   `beneficiary_name` VARCHAR(150) NOT NULL,
   `issue_date` DATE NOT NULL,
   `expiry_date` DATE NOT NULL,
+  `claim_period_days` INT NULL,
   `status` VARCHAR(30) DEFAULT 'DRAFT', -- DRAFT, PENDING_APPROVAL, ACTIVE, CLAIMED, EXPIRED, RELEASED
   `terms_conditions` TEXT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -147,6 +162,8 @@ CREATE TABLE IF NOT EXISTS `bg_claims` (
   `amount` DECIMAL(15, 2) NOT NULL,
   `claim_date` DATE NOT NULL,
   `status` VARCHAR(30) DEFAULT 'PENDING', -- PENDING, APPROVED, REJECTED
+  `claimant_details` VARCHAR(150) NULL,
+  `reviewed_by_id` BIGINT NULL,
   `payment_details` TEXT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`bg_id`) REFERENCES `bank_guarantees` (`id`) ON DELETE CASCADE,
@@ -157,17 +174,22 @@ CREATE TABLE IF NOT EXISTS `bg_claims` (
 CREATE TABLE IF NOT EXISTS `export_bills` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `client_id` BIGINT NOT NULL,
+  `lc_id` BIGINT NULL,
   `bill_number` VARCHAR(50) UNIQUE NOT NULL,
   `amount` DECIMAL(15, 2) NOT NULL,
   `currency` VARCHAR(3) DEFAULT 'USD',
   `status` VARCHAR(30) DEFAULT 'INITIATED', -- INITIATED, DOCUMENTS_SENT, ACCEPTED, PAID, OVERDUE
+  `bill_type` VARCHAR(30) DEFAULT 'DocumentaryCollection',
+  `bill_date` DATE NULL,
   `drawer_name` VARCHAR(150) NOT NULL,
   `drawee_name` VARCHAR(150) NOT NULL,
+  `buyer_country` VARCHAR(100) NULL,
   `maturity_date` DATE NOT NULL,
   `collection_bank` VARCHAR(150) NOT NULL,
   `tracking_status` VARCHAR(100) DEFAULT 'DOCUMENTS_PREPARED',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`client_id`) REFERENCES `corporate_clients` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`lc_id`) REFERENCES `letters_of_credit` (`id`) ON DELETE SET NULL,
   INDEX `idx_bill_client` (`client_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -175,15 +197,22 @@ CREATE TABLE IF NOT EXISTS `export_bills` (
 CREATE TABLE IF NOT EXISTS `collection_instructions` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `client_id` BIGINT NOT NULL,
+  `bill_id` BIGINT NULL,
   `instruction_ref` VARCHAR(50) UNIQUE NOT NULL,
+  `collecting_bank_ref` VARCHAR(50) NULL,
   `amount` DECIMAL(15, 2) NOT NULL,
   `currency` VARCHAR(3) DEFAULT 'USD',
   `tenure_type` VARCHAR(30) NOT NULL, -- SIGHT, USANCE
+  `instruction_type` VARCHAR(30) DEFAULT 'DP',
   `drawee_name` VARCHAR(150) NOT NULL,
+  `instruction_date` DATE NULL,
+  `response_date` DATE NULL,
+  `remittance_amount` DECIMAL(15, 2) NULL,
   `status` VARCHAR(30) DEFAULT 'PENDING', -- PENDING, PROCESSING, COLLECTED, RETURNED
   `instruction_details` TEXT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`client_id`) REFERENCES `corporate_clients` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`bill_id`) REFERENCES `export_bills` (`id`) ON DELETE SET NULL,
   INDEX `idx_instruction_client` (`client_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -192,6 +221,7 @@ CREATE TABLE IF NOT EXISTS `sanctions_screenings` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `entity_name` VARCHAR(150) NOT NULL,
   `entity_type` VARCHAR(50) NOT NULL, -- APPLICANT, BENEFICIARY, BANK
+  `entity_country` VARCHAR(100) NULL,
   `transaction_type` VARCHAR(50) NOT NULL, -- LC, BG, EXPORT_BILL
   `transaction_id` VARCHAR(50) NOT NULL,
   `match_score` DECIMAL(5, 2) NOT NULL,
@@ -207,7 +237,10 @@ CREATE TABLE IF NOT EXISTS `compliance_cases` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `screening_id` BIGINT NOT NULL,
   `case_status` VARCHAR(30) DEFAULT 'OPEN', -- OPEN, UNDER_INVESTIGATION, ESCALATED, RESOLVED_CLEARED, RESOLVED_BLOCKED
+  `assigned_officer_id` BIGINT NULL,
   `assigned_to` VARCHAR(50) NULL,
+  `opened_date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `closed_date` TIMESTAMP NULL,
   `resolution_notes` TEXT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -221,12 +254,19 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `user_id` BIGINT NOT NULL,
   `title` VARCHAR(150) NOT NULL,
   `message` TEXT NOT NULL,
-  `type` VARCHAR(30) DEFAULT 'INFO', -- INFO, WARNING, ALERT, APPROVAL
-  `is_read` BOOLEAN DEFAULT FALSE,
+  `category` VARCHAR(30) DEFAULT 'INFO', -- INFO, WARNING, ALERT, APPROVAL
+  `status` VARCHAR(30) DEFAULT 'UNREAD', -- UNREAD, READ, DISMISSED
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_user_notification` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 15. Trade Reports Table
+CREATE TABLE IF NOT EXISTS `trade_reports` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `scope` VARCHAR(50) NOT NULL,
+  `metrics` TEXT NOT NULL,
+  `generated_date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================================
 -- SEED DATA
@@ -243,10 +283,10 @@ INSERT INTO `users` (`username`, `password`, `email`, `full_name`, `role`, `stat
 ('admin', '$2a$10$8.UnVuG9HHgffUDAlk8GPuRGTwRKBt18aRjN.GJCp4e9.1z40.Ety', 'admin@tradevault.com', 'System Admin', 'ADMIN', 'ACTIVE');
 
 -- Insert Corporate Clients
-INSERT INTO `corporate_clients` (`company_name`, `tax_id`, `country`, `status`, `credit_limit`) VALUES
-('Acme Industrial Holdings', 'TX-99887766', 'United States', 'ACTIVE', 50000000.00),
-('Global Trading Logistics LLC', 'TX-55443322', 'United Kingdom', 'ACTIVE', 25000000.00),
-('Nexus Electronics Corp', 'TX-11223344', 'Singapore', 'ACTIVE', 80000000.00);
+INSERT INTO `corporate_clients` (`company_name`, `tax_id`, `country`, `status`, `credit_limit`, `registration_number`, `industry`, `kyc_status`) VALUES
+('Acme Industrial Holdings', 'TX-99887766', 'United States', 'ACTIVE', 50000000.00, 'REG-1001', 'Manufacturing', 'VERIFIED'),
+('Global Trading Logistics LLC', 'TX-55443322', 'United Kingdom', 'ACTIVE', 25000000.00, 'REG-1002', 'Logistics', 'VERIFIED'),
+('Nexus Electronics Corp', 'TX-11223344', 'Singapore', 'ACTIVE', 80000000.00, 'REG-1003', 'Electronics', 'VERIFIED');
 
 -- Insert Credit Facilities
 -- 1 for Acme Industrial Holdings
@@ -266,12 +306,12 @@ INSERT INTO `credit_facilities` (`client_id`, `facility_type`, `limit_amount`, `
 (3, 'REVOLVING_LINE', 30000000.00, 0.00, 'USD', 'ACTIVE', '2028-12-31');
 
 -- Insert Letters of Credit
-INSERT INTO `letters_of_credit` (`client_id`, `credit_facility_id`, `lc_number`, `lc_type`, `amount`, `currency`, `applicant_name`, `beneficiary_name`, `issue_date`, `expiry_date`, `status`, `tolerance_percentage`, `port_of_loading`, `port_of_discharge`, `latest_shipment_date`) VALUES
-(1, 1, 'LC-2026-0001', 'SIGHT', 1500000.00, 'USD', 'Acme Industrial Holdings', 'Tokyo Steel Alloys Inc.', '2026-01-10', '2026-10-10', 'ACTIVE', 5.00, 'Port of Yokohama', 'Port of Los Angeles', '2026-09-15'),
-(1, 1, 'LC-2026-0002', 'USANCE', 3000000.00, 'USD', 'Acme Industrial Holdings', 'Berlin Motor Parts GmbH', '2026-03-01', '2026-12-01', 'IN_REVIEW', 10.00, 'Port of Hamburg', 'Port of New York', '2026-11-01'),
-(2, 4, 'LC-2026-0003', 'SIGHT', 3200000.00, 'USD', 'Global Trading Logistics LLC', 'Shanghai Shipping Conglomerate', '2026-02-15', '2026-09-15', 'ACTIVE', 0.00, 'Port of Shanghai', 'Port of London', '2026-08-30'),
-(3, 6, 'LC-2026-0004', 'SIGHT', 12000000.00, 'USD', 'Nexus Electronics Corp', 'Shenzhen Semiconductor Co', '2026-04-01', '2027-04-01', 'APPROVED', 2.00, 'Port of Shenzhen', 'Port of Singapore', '2027-02-28'),
-(3, 6, 'LC-2026-0005', 'USANCE', 12000000.00, 'USD', 'Nexus Electronics Corp', 'Taipei Silicon Foundry Ltd', '2026-05-10', '2027-05-10', 'ACTIVE', 5.00, 'Port of Keelung', 'Port of Singapore', '2027-04-15');
+INSERT INTO `letters_of_credit` (`client_id`, `credit_facility_id`, `lc_number`, `lc_type`, `amount`, `currency`, `applicant_name`, `beneficiary_name`, `beneficiary_country`, `issue_date`, `expiry_date`, `status`, `tolerance_percentage`, `port_of_loading`, `port_of_discharge`, `latest_shipment_date`) VALUES
+(1, 1, 'LC-2026-0001', 'SIGHT', 1500000.00, 'USD', 'Acme Industrial Holdings', 'Tokyo Steel Alloys Inc.', 'Japan', '2026-01-10', '2026-10-10', 'ACTIVE', 5.00, 'Port of Yokohama', 'Port of Los Angeles', '2026-09-15'),
+(1, 1, 'LC-2026-0002', 'USANCE', 3000000.00, 'USD', 'Acme Industrial Holdings', 'Berlin Motor Parts GmbH', 'Germany', '2026-03-01', '2026-12-01', 'IN_REVIEW', 10.00, 'Port of Hamburg', 'Port of New York', '2026-11-01'),
+(2, 4, 'LC-2026-0003', 'SIGHT', 3200000.00, 'USD', 'Global Trading Logistics LLC', 'Shanghai Shipping Conglomerate', 'China', '2026-02-15', '2026-09-15', 'ACTIVE', 0.00, 'Port of Shanghai', 'Port of London', '2026-08-30'),
+(3, 6, 'LC-2026-0004', 'SIGHT', 12000000.00, 'USD', 'Nexus Electronics Corp', 'Shenzhen Semiconductor Co', 'China', '2026-04-01', '2027-04-01', 'APPROVED', 2.00, 'Port of Shenzhen', 'Port of Singapore', '2027-02-28'),
+(3, 6, 'LC-2026-0005', 'USANCE', 12000000.00, 'USD', 'Nexus Electronics Corp', 'Taipei Silicon Foundry Ltd', 'Taiwan', '2026-05-10', '2027-05-10', 'ACTIVE', 5.00, 'Port of Keelung', 'Port of Singapore', '2027-04-15');
 
 -- Insert LC Drawings
 INSERT INTO `lc_drawings` (`lc_id`, `drawing_ref`, `amount`, `currency`, `status`, `presentation_date`, `documents_presented`, `discrepancy_notes`) VALUES
@@ -316,15 +356,24 @@ INSERT INTO `compliance_cases` (`screening_id`, `case_status`, `assigned_to`, `r
 (4, 'UNDER_INVESTIGATION', 'compliance', 'Analyzing corporate shareholding certificates to verify Ultimate Beneficial Owner (UBO) status.');
 
 -- Insert Notifications
-INSERT INTO `notifications` (`user_id`, `title`, `message`, `type`, `is_read`) VALUES
-(1, 'LC Approved', 'Your Letter of Credit LC-2026-0004 has been approved by the Relationship Manager.', 'INFO', FALSE),
-(1, 'Drawing Discrepancy Found', 'A discrepancy has been reported on your drawing DRW-LC003-A. Please review notes.', 'ALERT', FALSE),
-(5, 'Sanctions Alert!', 'A high match sanctions screening alert (89.5% score) has been triggered for LC-2026-0002.', 'ALERT', FALSE),
-(2, 'Credit Limit Approaching', 'Global Trading Logistics revolving limit is 80% utilized. Please consider extension.', 'WARNING', FALSE),
-(2, 'LC Amendment Approval Required', 'Corporate client has requested an amendment on LC-2026-0005. Action required.', 'APPROVAL', FALSE);
+INSERT INTO `notifications` (`user_id`, `title`, `message`, `category`, `status`) VALUES
+(1, 'LC Approved', 'Your Letter of Credit LC-2026-0004 has been approved by the Relationship Manager.', 'INFO', 'UNREAD'),
+(1, 'Drawing Discrepancy Found', 'A discrepancy has been reported on your drawing DRW-LC003-A. Please review notes.', 'ALERT', 'UNREAD'),
+(5, 'Sanctions Alert!', 'A high match sanctions screening alert (89.5% score) has been triggered for LC-2026-0002.', 'ALERT', 'UNREAD'),
+(2, 'Credit Limit Approaching', 'Global Trading Logistics revolving limit is 80% utilized. Please consider extension.', 'WARNING', 'UNREAD'),
+(2, 'LC Amendment Approval Required', 'Corporate client has requested an amendment on LC-2026-0005. Action required.', 'APPROVAL', 'UNREAD');
 
 -- Insert Audit Logs
 INSERT INTO `audit_logs` (`user_id`, `username`, `action`, `details`, `ip_address`) VALUES
 (1, 'client', 'LC_CREATION_DRAFT', 'Created draft Letter of Credit LC-2026-0002 for $3,000,000.00', '192.168.1.100'),
 (2, 'ops', 'LC_DRAWING_STATUS_UPDATE', 'Updated drawing DRW-LC001-A to PAID. Utilizing credit facility LETTER_OF_CREDIT_FACILITY.', '192.168.2.14'),
 (5, 'compliance', 'COMPLIANCE_CASE_OPENED', 'Opened investigation compliance case for high match score on Vance Ironworks Syria.', '192.168.5.5');
+
+-- Link seed client user to Corporate Client 1
+UPDATE `users` SET `corporate_client_id` = 1 WHERE `username` = 'client';
+
+-- Guarantee that all default seeded users have password 'password' and status 'ACTIVE'
+UPDATE `users` 
+SET `password` = '$2a$10$8.UnVuG9HHgffUDAlk8GPuRGTwRKBt18aRjN.GJCp4e9.1z40.Ety', 
+    `status` = 'ACTIVE' 
+WHERE `username` IN ('client', 'ops', 'relationship', 'treasury', 'compliance', 'admin');

@@ -3,6 +3,8 @@ package com.tradevault.controller;
 import com.tradevault.dto.ApiResponse;
 import com.tradevault.entity.*;
 import com.tradevault.service.LetterOfCreditService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +21,8 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class LetterOfCreditController {
 
+    private static final Logger logger = LoggerFactory.getLogger(LetterOfCreditController.class);
+
     @Autowired
     private LetterOfCreditService lcService;
 
@@ -29,6 +33,7 @@ public class LetterOfCreditController {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null || !lc.getClient().getId().equals(user.getCorporateClient().getId())) {
+                logger.warn("LC access denied: username='{}' attempted to access lcId={}", user.getUsername(), lc.getId());
                 throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this Letter of Credit");
             }
         }
@@ -38,6 +43,7 @@ public class LetterOfCreditController {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null || !user.getCorporateClient().getId().equals(clientId)) {
+                logger.warn("Client access denied: username='{}' attempted to access clientId={}", user.getUsername(), clientId);
                 throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data");
             }
         }
@@ -46,24 +52,32 @@ public class LetterOfCreditController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<LetterOfCredit>>> getAllLCs(Principal principal) {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
+        logger.debug("GetAllLCs requested by username='{}', role='{}'", user.getUsername(), user.getRole());
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null) {
                 return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", java.util.Collections.emptyList()));
             }
-            return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", 
-                    lcService.getLCsByClientId(user.getCorporateClient().getId())));
+            List<LetterOfCredit> lcs = lcService.getLCsByClientId(user.getCorporateClient().getId());
+            logger.info("Returned {} LCs for CLIENT user='{}'", lcs.size(), user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", lcs));
         }
-        return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", lcService.getAllLCs()));
+        List<LetterOfCredit> lcs = lcService.getAllLCs();
+        logger.info("Returned all {} LCs for staff user='{}'", lcs.size(), user.getUsername());
+        return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", lcs));
     }
 
     @GetMapping("/client/{clientId}")
     public ResponseEntity<ApiResponse<List<LetterOfCredit>>> getLCsByClientId(@PathVariable Long clientId, Principal principal) {
+        logger.debug("GetLCsByClientId clientId={} requested by username='{}'", clientId, principal.getName());
         checkClientAccess(clientId, principal);
-        return ResponseEntity.ok(ApiResponse.success("Letters of Credit for client fetched", lcService.getLCsByClientId(clientId)));
+        List<LetterOfCredit> lcs = lcService.getLCsByClientId(clientId);
+        logger.info("Retrieved {} LCs for clientId={}", lcs.size(), clientId);
+        return ResponseEntity.ok(ApiResponse.success("Letters of Credit for client fetched", lcs));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<LetterOfCredit>> getLCById(@PathVariable Long id, Principal principal) {
+        logger.debug("GetLCById id={} requested by username='{}'", id, principal.getName());
         LetterOfCredit lc = lcService.getLCById(id);
         checkLcAccess(lc, principal);
         return ResponseEntity.ok(ApiResponse.success("Letter of Credit details", lc));
@@ -75,8 +89,10 @@ public class LetterOfCreditController {
             @RequestParam Long clientId,
             @RequestParam Long facilityId,
             Principal principal) {
+        logger.info("LC create request: clientId={}, facilityId={}, by username='{}'", clientId, facilityId, principal.getName());
         checkClientAccess(clientId, principal);
         LetterOfCredit created = lcService.createLC(lc, clientId, facilityId, principal.getName());
+        logger.info("LC created: lcNumber='{}', by username='{}'", created.getLcNumber(), principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Letter of Credit draft created successfully", created));
     }
 
@@ -87,29 +103,36 @@ public class LetterOfCreditController {
             @RequestBody Map<String, String> payload,
             Principal principal) {
         String status = payload.get("status");
+        logger.info("LC status update request: lcId={}, targetStatus='{}', by username='{}'", id, status, principal.getName());
         LetterOfCredit lc = lcService.getLCById(id);
         checkLcAccess(lc, principal);
 
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         if ("CLIENT".equals(user.getRole())) {
             if (!"IN_REVIEW".equals(status)) {
+                logger.warn("CLIENT user='{}' attempted invalid status '{}' on lcId={}", user.getUsername(), status, id);
                 throw new com.tradevault.exception.BadRequestException("Corporate clients are only allowed to submit Letters of Credit for review (IN_REVIEW status)");
             }
             if (!"DRAFT".equals(lc.getStatus())) {
+                logger.warn("CLIENT user='{}' attempted to submit non-DRAFT LC: lcId={}, currentStatus='{}'", user.getUsername(), id, lc.getStatus());
                 throw new com.tradevault.exception.BadRequestException("Only DRAFT Letters of Credit can be submitted for review");
             }
         }
 
         LetterOfCredit updated = lcService.updateStatus(id, status, principal.getName());
+        logger.info("LC status updated to '{}': lcNumber='{}'", status, updated.getLcNumber());
         return ResponseEntity.ok(ApiResponse.success("Letter of Credit status updated to: " + status, updated));
     }
 
     // Amendments APIs
     @GetMapping("/{id}/amendments")
     public ResponseEntity<ApiResponse<List<LCAmendment>>> getAmendments(@PathVariable Long id, Principal principal) {
+        logger.debug("GetAmendments for lcId={} requested by username='{}'", id, principal.getName());
         LetterOfCredit lc = lcService.getLCById(id);
         checkLcAccess(lc, principal);
-        return ResponseEntity.ok(ApiResponse.success("LC Amendments fetched", lcService.getAmendments(id)));
+        List<LCAmendment> amendments = lcService.getAmendments(id);
+        logger.info("Retrieved {} amendments for lcId={}", amendments.size(), id);
+        return ResponseEntity.ok(ApiResponse.success("LC Amendments fetched", amendments));
     }
 
     @PostMapping("/{id}/amendments")
@@ -122,8 +145,10 @@ public class LetterOfCreditController {
         BigDecimal newAmount = new BigDecimal(payload.get("newAmount").toString());
         LocalDate newExpiry = LocalDate.parse(payload.get("newExpiryDate").toString());
         String justification = payload.get("justification").toString();
-        
+        logger.info("LC amendment requested: lcId={}, newAmount={}, newExpiry={}, by username='{}'",
+                id, newAmount, newExpiry, principal.getName());
         LCAmendment requested = lcService.requestAmendment(id, newAmount, newExpiry, justification, principal.getName());
+        logger.info("LC amendment created: amendmentId={}, lcNumber='{}'", requested.getId(), lc.getLcNumber());
         return ResponseEntity.ok(ApiResponse.success("LC Amendment requested successfully", requested));
     }
 
@@ -134,16 +159,21 @@ public class LetterOfCreditController {
             @RequestBody Map<String, String> payload,
             Principal principal) {
         String status = payload.get("status");
+        logger.info("Processing LC amendment: amendmentId={}, targetStatus='{}', by username='{}'", amendmentId, status, principal.getName());
         LCAmendment processed = lcService.processAmendment(amendmentId, status, principal.getName());
+        logger.info("LC amendment processed to status='{}': amendmentId={}", status, amendmentId);
         return ResponseEntity.ok(ApiResponse.success("Amendment processed successfully", processed));
     }
 
     // Drawings APIs
     @GetMapping("/{id}/drawings")
     public ResponseEntity<ApiResponse<List<LCDrawing>>> getDrawings(@PathVariable Long id, Principal principal) {
+        logger.debug("GetDrawings for lcId={} requested by username='{}'", id, principal.getName());
         LetterOfCredit lc = lcService.getLCById(id);
         checkLcAccess(lc, principal);
-        return ResponseEntity.ok(ApiResponse.success("LC Drawings fetched", lcService.getDrawings(id)));
+        List<LCDrawing> drawings = lcService.getDrawings(id);
+        logger.info("Retrieved {} drawings for lcId={}", drawings.size(), id);
+        return ResponseEntity.ok(ApiResponse.success("LC Drawings fetched", drawings));
     }
 
     @PostMapping("/{id}/drawings")
@@ -155,8 +185,10 @@ public class LetterOfCreditController {
         checkLcAccess(lc, principal);
         BigDecimal amount = new BigDecimal(payload.get("amount").toString());
         String documents = payload.get("documentsPresented").toString();
-        
+        logger.info("LC drawing presented: lcId={}, amount={}, by username='{}'", id, amount, principal.getName());
         LCDrawing drawing = lcService.presentDrawing(id, amount, documents, principal.getName());
+        logger.info("LC drawing created: drawingRef='{}', status='{}', lcNumber='{}'",
+                drawing.getDrawingRef(), drawing.getStatus(), lc.getLcNumber());
         return ResponseEntity.ok(ApiResponse.success("Documentary drawing presented successfully", drawing));
     }
 
@@ -168,8 +200,9 @@ public class LetterOfCreditController {
             Principal principal) {
         String status = payload.get("status");
         String discrepancy = payload.get("discrepancyNotes");
-        
+        logger.info("Processing LC drawing: drawingId={}, targetStatus='{}', by username='{}'", drawingId, status, principal.getName());
         LCDrawing processed = lcService.processDrawing(drawingId, status, discrepancy, principal.getName());
+        logger.info("LC drawing processed to status='{}': drawingRef='{}'", status, processed.getDrawingRef());
         return ResponseEntity.ok(ApiResponse.success("Drawing processed: " + status, processed));
     }
 }

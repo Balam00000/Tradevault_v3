@@ -4,9 +4,18 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.tradevault.entity.enums.LCType;
+import com.tradevault.entity.enums.LetterOfCreditStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import lombok.*;
 
 @Entity
 @Table(name = "letters_of_credit")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class LetterOfCredit {
 
     @Id
@@ -24,8 +33,10 @@ public class LetterOfCredit {
     @Column(name = "lc_number", unique = true, nullable = false, length = 50)
     private String lcNumber;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "lc_type", nullable = false, length = 30)
-    private String lcType; // SIGHT, USANCE
+    private LCType lcType; // SIGHT, USANCE
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
@@ -39,14 +50,19 @@ public class LetterOfCredit {
     @Column(name = "beneficiary_name", nullable = false, length = 150)
     private String beneficiaryName;
 
+    @Column(name = "beneficiary_country", length = 100)
+    private String beneficiaryCountry;
+
     @Column(name = "issue_date", nullable = false)
     private LocalDate issueDate;
 
     @Column(name = "expiry_date", nullable = false)
     private LocalDate expiryDate;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(length = 30)
-    private String status = "DRAFT"; // DRAFT, IN_REVIEW, APPROVED, REJECTED, ACTIVE, AMENDED, DRAWN, EXPIRED, CLOSED
+    private LetterOfCreditStatus status = LetterOfCreditStatus.DRAFT; // DRAFT, IN_REVIEW, APPROVED, REJECTED, ACTIVE, AMENDED, DRAWN, EXPIRED, CLOSED
 
     @Column(name = "tolerance_percentage", precision = 5, scale = 2)
     private BigDecimal tolerancePercentage = BigDecimal.ZERO;
@@ -63,57 +79,6 @@ public class LetterOfCredit {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public LetterOfCredit() {}
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
 
-    public CorporateClient getClient() { return client; }
-    public void setClient(CorporateClient client) { this.client = client; }
-
-    public CreditFacility getCreditFacility() { return creditFacility; }
-    public void setCreditFacility(CreditFacility creditFacility) { this.creditFacility = creditFacility; }
-
-    public String getLcNumber() { return lcNumber; }
-    public void setLcNumber(String lcNumber) { this.lcNumber = lcNumber; }
-
-    public String getLcType() { return lcType; }
-    public void setLcType(String lcType) { this.lcType = lcType; }
-
-    public BigDecimal getAmount() { return amount; }
-    public void setAmount(BigDecimal amount) { this.amount = amount; }
-
-    public String getCurrency() { return currency; }
-    public void setCurrency(String currency) { this.currency = currency; }
-
-    public String getApplicantName() { return applicantName; }
-    public void setApplicantName(String applicantName) { this.applicantName = applicantName; }
-
-    public String getBeneficiaryName() { return beneficiaryName; }
-    public void setBeneficiaryName(String beneficiaryName) { this.beneficiaryName = beneficiaryName; }
-
-    public LocalDate getIssueDate() { return issueDate; }
-    public void setIssueDate(LocalDate issueDate) { this.issueDate = issueDate; }
-
-    public LocalDate getExpiryDate() { return expiryDate; }
-    public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public BigDecimal getTolerancePercentage() { return tolerancePercentage; }
-    public void setTolerancePercentage(BigDecimal tolerancePercentage) { this.tolerancePercentage = tolerancePercentage; }
-
-    public String getPortOfLoading() { return portOfLoading; }
-    public void setPortOfLoading(String portOfLoading) { this.portOfLoading = portOfLoading; }
-
-    public String getPortOfDischarge() { return portOfDischarge; }
-    public void setPortOfDischarge(String portOfDischarge) { this.portOfDischarge = portOfDischarge; }
-
-    public LocalDate getLatestShipmentDate() { return latestShipmentDate; }
-    public void setLatestShipmentDate(LocalDate latestShipmentDate) { this.latestShipmentDate = latestShipmentDate; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

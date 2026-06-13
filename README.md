@@ -6,7 +6,8 @@ TradeVault is a modern, enterprise-grade Corporate Banking & Trade Finance platf
 
 ## 🏗️ Platform Architecture & Workflows
 
-TradeVault utilizes a modern, dual-tier tech stack combined with strict Role-Based Access Control (RBAC) and automated data-scoping.
+TradeVault utilizes a modern, dual-tier tech stack combined with strict Role-Based Access Control (RBAC) and automated data-scoping. For a detailed code-level breakdown of the backend, request lifecycles, and core business modules, refer to the [Backend Architecture Guide](file:///d:/TRADE-VAULT/backend/ARCHITECTURE.md).
+
 
 ```mermaid
 graph TD

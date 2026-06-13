@@ -41,6 +41,21 @@ const Dashboard = () => {
   const [isEvalOpen, setIsEvalOpen] = useState(false);
   const [evalStep, setEvalStep] = useState('review'); // 'review' | 'success-limit' | 'success-verify'
 
+  const [facilities, setFacilities] = useState([]);
+  const [exposureTrend, setExposureTrend] = useState([
+    { month: 'Jan', LCs: 8.5, BGs: 1.0, Bills: 1.2 },
+    { month: 'Feb', LCs: 9.8, BGs: 1.2, Bills: 1.5 },
+    { month: 'Mar', LCs: 11.2, BGs: 1.1, Bills: 1.8 },
+    { month: 'Apr', LCs: 12.5, BGs: 1.4, Bills: 2.0 },
+    { month: 'May', LCs: 14.5, BGs: 1.5, Bills: 2.2 },
+  ]);
+  const [complianceMatchStats, setComplianceMatchStats] = useState([
+    { range: '0-20%', count: 18, fill: '#10b981' },
+    { range: '20-50%', count: 4, fill: '#3b82f6' },
+    { range: '50-80%', count: 1, fill: '#f59e0b' },
+    { range: '80-100%', count: 2, fill: '#ef4444' },
+  ]);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -54,10 +69,114 @@ const Dashboard = () => {
 
         // Fetch other contextual summaries
         const lcsRes = await api.get('/lcs');
-        setRecentLcs((lcsRes.data.data || []).slice(0, 5));
+        const allLcs = lcsRes.data.data || [];
+        setRecentLcs(allLcs.slice(0, 5));
 
         const bgsRes = await api.get('/bgs');
-        setRecentBgs((bgsRes.data.data || []).slice(0, 4));
+        const allBgs = bgsRes.data.data || [];
+        setRecentBgs(allBgs.slice(0, 4));
+
+        let allBills = [];
+        try {
+          const billsRes = await api.get('/bills');
+          allBills = billsRes.data.data || [];
+        } catch (e) {
+          console.error(e);
+        }
+
+        // Fetch facilities
+        let allFacilities = [];
+        try {
+          const facilitiesRes = await api.get('/corporates/facilities');
+          allFacilities = facilitiesRes.data.data || [];
+          setFacilities(allFacilities);
+        } catch (e) {
+          console.error(e);
+        }
+
+        // Build RM/Staff portfolio dynamically
+        if (user?.role === 'RELATIONSHIP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'OPERATIONS' || user?.role === 'TREASURY') {
+          try {
+            const corporatesRes = await api.get('/corporates');
+            const corporates = corporatesRes.data.data || [];
+            
+            const dynamicPortfolio = corporates.map(c => {
+              const clientFacilities = allFacilities.filter(f => f.client?.id === c.id);
+              const totalLimit = clientFacilities.reduce((sum, f) => sum + Number(f.limitAmount), 0);
+              const totalUtilized = clientFacilities.reduce((sum, f) => sum + Number(f.utilizedAmount), 0);
+              return {
+                id: c.id,
+                name: c.companyName,
+                country: c.country,
+                limit: totalLimit || c.creditLimit || 0,
+                exposure: totalUtilized,
+                status: c.status || 'ACTIVE'
+              };
+            });
+            if (dynamicPortfolio.length > 0) {
+              setPortfolio(dynamicPortfolio);
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        // Fetch compliance screenings for match score distribution
+        if (user?.role === 'COMPLIANCE' || user?.role === 'ADMIN') {
+          try {
+            const screeningsRes = await api.get('/compliance/screenings');
+            const screenings = screeningsRes.data.data || [];
+            let r1 = 0, r2 = 0, r3 = 0, r4 = 0;
+            screenings.forEach(s => {
+              const score = Number(s.matchScore) || 0;
+              if (score <= 20) r1++;
+              else if (score <= 50) r2++;
+              else if (score <= 80) r3++;
+              else r4++;
+            });
+            setComplianceMatchStats([
+              { range: '0-20%', count: r1, fill: '#10b981' },
+              { range: '20-50%', count: r2, fill: '#3b82f6' },
+              { range: '50-80%', count: r3, fill: '#f59e0b' },
+              { range: '80-100%', count: r4, fill: '#ef4444' },
+            ]);
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        // Build dynamic trend data for last 5 months
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const currentMonthIdx = new Date().getMonth();
+        const trendMonths = [];
+        for (let i = 4; i >= 0; i--) {
+          const idx = (currentMonthIdx - i + 12) % 12;
+          trendMonths.push({ name: months[idx], index: idx, year: new Date().getFullYear() - (currentMonthIdx - i < 0 ? 1 : 0) });
+        }
+
+        const dynamicTrend = trendMonths.map(tm => {
+          const getMonthVal = (dateStr) => {
+            if (!dateStr) return null;
+            const d = new Date(dateStr);
+            return { month: d.getMonth(), year: d.getFullYear() };
+          };
+
+          const sumAmount = (list) => {
+            return list.filter(item => {
+              const d = getMonthVal(item.issueDate || item.createdAt);
+              if (!d) return false;
+              return (d.year < tm.year) || (d.year === tm.year && d.month <= tm.index);
+            }).reduce((sum, item) => sum + (Number(item.amount) || 0), 0) / 1000000;
+          };
+
+          return {
+            month: tm.name,
+            LCs: Number(sumAmount(allLcs).toFixed(2)),
+            BGs: Number(sumAmount(allBgs).toFixed(2)),
+            Bills: Number(sumAmount(allBills).toFixed(2))
+          };
+        });
+        setExposureTrend(dynamicTrend);
 
         if (user?.role === 'ADMIN') {
           const auditRes = await api.get('/audit-logs');
@@ -100,25 +219,10 @@ const Dashboard = () => {
   // ----------------------------------------------------
   // CHART DATA
   // ----------------------------------------------------
-  const exposureTrendData = [
-    { month: 'Jan', LCs: 8.5, BGs: 1.0, Bills: 1.2 },
-    { month: 'Feb', LCs: 9.8, BGs: 1.2, Bills: 1.5 },
-    { month: 'Mar', LCs: 11.2, BGs: 1.1, Bills: 1.8 },
-    { month: 'Apr', LCs: 12.5, BGs: 1.4, Bills: 2.0 },
-    { month: 'May', LCs: 14.5, BGs: 1.5, Bills: 2.2 },
-  ];
-
   const instrumentDistribution = [
     { name: 'Letters of Credit', value: stats?.lcExposure || 14500000, color: '#4a6be9' },
     { name: 'Bank Guarantees', value: stats?.bgExposure || 1500000, color: '#10b981' },
     { name: 'Export Bills', value: stats?.billExposure || 2200000, color: '#f59e0b' },
-  ];
-
-  const complianceMatchStats = [
-    { range: '0-20%', count: 18, fill: '#10b981' },
-    { range: '20-50%', count: 4, fill: '#3b82f6' },
-    { range: '50-80%', count: 1, fill: '#f59e0b' },
-    { range: '80-100%', count: 2, fill: '#ef4444' },
   ];
 
   const formatCurrency = (val) => {
@@ -266,39 +370,50 @@ const Dashboard = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl dark:bg-slate-900/40 bg-slate-50 border dark:border-slate-800 border-slate-100">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-brand-500"></span>
-                    <span className="text-xs font-bold uppercase tracking-wider">Letter of Credit (LC) Facility</span>
-                  </div>
-                  <span className="text-xs font-semibold">22.5% Utilized</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-brand-500 h-full" style={{ width: '22.5%' }}></div>
-                </div>
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                  <span>$4,500,000 Utilized</span>
-                  <span>$20,000,000 Active Facility Limit</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl dark:bg-slate-900/40 bg-slate-50 border dark:border-slate-800 border-slate-100">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                    <span className="text-xs font-bold uppercase tracking-wider">Bank Guarantee (BG) Facility</span>
-                  </div>
-                  <span className="text-xs font-semibold">20% Utilized</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full" style={{ width: '20%' }}></div>
-                </div>
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                  <span>$2,000,000 Utilized</span>
-                  <span>$10,000,000 Facility Limit</span>
-                </div>
-              </div>
+              {facilities.length === 0 ? (
+                <div className="py-10 text-center text-slate-400 text-xs">No active credit facilities assigned.</div>
+              ) : (
+                facilities.map(f => {
+                  const rate = f.limitAmount > 0 
+                    ? ((f.utilizedAmount / f.limitAmount) * 100)
+                    : 0;
+                  const themeColor = f.facilityType === 'LETTER_OF_CREDIT_FACILITY' 
+                    ? 'brand' 
+                    : f.facilityType === 'GUARANTEE_FACILITY'
+                    ? 'emerald'
+                    : 'indigo';
+                  const dotClass = f.facilityType === 'LETTER_OF_CREDIT_FACILITY' 
+                    ? 'bg-brand-500' 
+                    : f.facilityType === 'GUARANTEE_FACILITY'
+                    ? 'bg-emerald-500'
+                    : 'bg-indigo-500';
+                  const progressClass = f.facilityType === 'LETTER_OF_CREDIT_FACILITY' 
+                    ? 'bg-brand-500' 
+                    : f.facilityType === 'GUARANTEE_FACILITY'
+                    ? 'bg-emerald-500'
+                    : 'bg-indigo-500';
+                  return (
+                    <div key={f.id} className="p-4 rounded-2xl dark:bg-slate-900/40 bg-slate-50 border dark:border-slate-800 border-slate-100">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${dotClass}`}></span>
+                          <span className="text-xs font-bold uppercase tracking-wider">
+                            {f.facilityType?.replace('_FACILITY', '').replace('_', ' ')}
+                          </span>
+                        </div>
+                        <span className="text-xs font-semibold">{rate.toFixed(1)}% Utilized</span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div className={`h-full ${progressClass}`} style={{ width: `${rate}%` }}></div>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>{formatCurrency(f.utilizedAmount)} Utilized</span>
+                        <span>{formatCurrency(f.limitAmount)} Active Facility Limit</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -537,7 +652,7 @@ const Dashboard = () => {
             </div>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={exposureTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={exposureTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorLcs" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#4a6be9" stopOpacity={0.4}/>

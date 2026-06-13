@@ -3,9 +3,18 @@ package com.tradevault.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.tradevault.entity.enums.CorporateClientStatus;
+import com.tradevault.entity.enums.KYCStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import lombok.*;
 
 @Entity
 @Table(name = "corporate_clients")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class CorporateClient {
 
     @Id
@@ -21,8 +30,24 @@ public class CorporateClient {
     @Column(nullable = false, length = 50)
     private String country;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(length = 30)
-    private String status = "ACTIVE";
+    private CorporateClientStatus status = CorporateClientStatus.ACTIVE;
+
+    @Column(name = "registration_number", length = 50)
+    private String registrationNumber;
+
+    @Column(length = 100)
+    private String industry;
+
+    @Column(name = "relationship_manager_id")
+    private Long relationshipManagerId;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "kyc_status", length = 30)
+    private KYCStatus kycStatus = KYCStatus.PENDING;
 
     @Column(name = "credit_limit", nullable = false, precision = 15, scale = 2)
     private BigDecimal creditLimit;
@@ -38,37 +63,5 @@ public class CorporateClient {
         updatedAt = LocalDateTime.now();
     }
 
-    public CorporateClient() {}
-
-    public CorporateClient(String companyName, String taxId, String country, BigDecimal creditLimit) {
-        this.companyName = companyName;
-        this.taxId = taxId;
-        this.country = country;
-        this.creditLimit = creditLimit;
-    }
-
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getCompanyName() { return companyName; }
-    public void setCompanyName(String companyName) { this.companyName = companyName; }
-
-    public String getTaxId() { return taxId; }
-    public void setTaxId(String taxId) { this.taxId = taxId; }
-
-    public String getCountry() { return country; }
-    public void setCountry(String country) { this.country = country; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public BigDecimal getCreditLimit() { return creditLimit; }
-    public void setCreditLimit(BigDecimal creditLimit) { this.creditLimit = creditLimit; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+   
 }

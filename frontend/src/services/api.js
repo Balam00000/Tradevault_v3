@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL configuration for Spring Boot
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:8300/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -126,7 +126,7 @@ api.interceptors.response.use(
     }
 
     console.warn('API error caught (Server offline or network issue). tradevault client is entering Mock Resilient Fallback Mode.', error);
-    
+
     const config = error.config;
     const url = config.url || '';
     const method = (config.method || 'get').toLowerCase();

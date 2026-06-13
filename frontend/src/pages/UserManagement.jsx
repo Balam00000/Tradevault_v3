@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   Users, Search, RefreshCw, Edit, Trash2, ShieldCheck, X,
   UserCheck, ShieldAlert, AlertTriangle, Building, Mail, User2
 } from 'lucide-react';
@@ -13,7 +13,7 @@ const UserManagement = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  
+
   // Edit Modal State
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -29,7 +29,7 @@ const UserManagement = () => {
       setLoading(true);
       const userRes = await api.get('/users');
       setUsers(userRes.data.data || []);
-      
+
       const clientRes = await api.get('/corporates/clients');
       setClients(clientRes.data.data || []);
     } catch (e) {
@@ -100,7 +100,7 @@ const UserManagement = () => {
   };
 
   const filteredUsers = users.filter(u => {
-    const matchesSearch = u.username.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch = u.username.toLowerCase().includes(search.toLowerCase()) ||
       u.fullName.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter ? u.status === statusFilter : true;
@@ -174,7 +174,7 @@ const UserManagement = () => {
       {/* Users List */}
       <div className="glass-card-light dark:glass-card-dark rounded-3xl p-6 overflow-hidden space-y-4">
         <h3 className="font-bold text-base flex items-center gap-1.5">User Accounts Ledger</h3>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
@@ -219,7 +219,7 @@ const UserManagement = () => {
                     </td>
                     <td className="text-right space-x-1">
                       {u.status === 'PENDING' && (
-                        <button 
+                        <button
                           onClick={() => handleQuickStatus(u, 'ACTIVE')}
                           className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold transition-all inline-flex items-center gap-1"
                         >
@@ -227,7 +227,7 @@ const UserManagement = () => {
                         </button>
                       )}
                       {u.status === 'ACTIVE' && (
-                        <button 
+                        <button
                           onClick={() => handleQuickStatus(u, 'SUSPENDED')}
                           className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 text-[10px] font-bold transition-all inline-flex items-center gap-1"
                         >
@@ -235,7 +235,7 @@ const UserManagement = () => {
                         </button>
                       )}
                       {u.status === 'SUSPENDED' && (
-                        <button 
+                        <button
                           onClick={() => handleQuickStatus(u, 'ACTIVE')}
                           className="px-2.5 py-1.5 rounded-lg bg-brand-500/10 hover:bg-brand-500 text-brand-500 hover:text-white border border-brand-500/20 text-[10px] font-bold transition-all inline-flex items-center gap-1"
                         >
@@ -243,7 +243,7 @@ const UserManagement = () => {
                         </button>
                       )}
 
-                      <button 
+                      <button
                         onClick={() => handleEditOpen(u)}
                         className="p-1.5 rounded-lg border dark:border-slate-800 border-slate-200 dark:hover:bg-slate-800 hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors inline-flex items-center"
                       >
@@ -251,7 +251,7 @@ const UserManagement = () => {
                       </button>
 
                       {u.username !== 'admin' && (
-                        <button 
+                        <button
                           onClick={() => handleDelete(u.id)}
                           className="p-1.5 rounded-lg border border-rose-500/10 hover:bg-rose-500/5 text-rose-500 transition-colors inline-flex items-center"
                         >
@@ -271,15 +271,15 @@ const UserManagement = () => {
       <AnimatePresence>
         {editingUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setEditingUser(null)}
               className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
             ></motion.div>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}

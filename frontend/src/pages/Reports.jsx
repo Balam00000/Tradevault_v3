@@ -20,6 +20,8 @@ const Reports = () => {
     totalUtilized: 0,
     utilizationRate: 0
   });
+  const [facilities, setFacilities] = useState([]);
+  const [lcs, setLcs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = async () => {
@@ -30,6 +32,20 @@ const Reports = () => {
         ...prev,
         ...(res.data.data || {})
       }));
+
+      try {
+        const facRes = await api.get('/corporates/facilities');
+        setFacilities(facRes.data.data || []);
+      } catch (e) {
+        console.error('Error fetching facilities', e);
+      }
+
+      try {
+        const lcsRes = await api.get('/lcs');
+        setLcs(lcsRes.data.data || []);
+      } catch (e) {
+        console.error('Error fetching LCs', e);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -46,9 +62,15 @@ const Reports = () => {
   };
 
   // ----------------------------------------------------
-  // CHART DATA
+  // DYNAMIC CHART DATA CALCULATIONS
   // ----------------------------------------------------
-  const facilityChartData = [
+  const facilityChartData = facilities.map(f => ({
+    name: `${f.client?.companyName?.split(' ')[0] || 'Client'} ${f.facilityType?.replace('_FACILITY', '').replace('_', ' ')}`,
+    limit: Number(f.limitAmount) / 1000000,
+    utilized: Number(f.utilizedAmount) / 1000000
+  }));
+
+  const finalFacilityChartData = facilityChartData.length > 0 ? facilityChartData : [
     { name: 'Acme LC Limit', limit: 20.0, utilized: 4.5 },
     { name: 'Acme Guarantee', limit: 10.0, utilized: 2.0 },
     { name: 'Acme Revolving', limit: 20.0, utilized: 12.0 },
@@ -56,7 +78,18 @@ const Reports = () => {
     { name: 'Nexus LC Limit', limit: 50.0, utilized: 24.0 },
   ];
 
-  const regionalData = [
+  const regionalDataMap = {};
+  lcs.forEach(lc => {
+    const country = lc.beneficiaryCountry || 'Unknown';
+    const amount = Number(lc.amount) / 1000000;
+    regionalDataMap[country] = (regionalDataMap[country] || 0) + amount;
+  });
+  const dynamicRegionalData = Object.keys(regionalDataMap).map(country => ({
+    country,
+    amount: Number(regionalDataMap[country].toFixed(2))
+  })).sort((a, b) => b.amount - a.amount);
+
+  const finalRegionalData = dynamicRegionalData.length > 0 ? dynamicRegionalData : [
     { country: 'United States', amount: 30.5 },
     { country: 'Singapore', amount: 24.0 },
     { country: 'United Kingdom', amount: 15.0 },
@@ -64,16 +97,23 @@ const Reports = () => {
     { country: 'Germany', amount: 3.0 },
   ];
 
+  const sightCount = lcs.filter(lc => lc.lcType === 'SIGHT').length;
+  const usanceCount = lcs.filter(lc => lc.lcType === 'USANCE').length;
+  const totalLcCount = sightCount + usanceCount;
+  const sightPct = totalLcCount > 0 ? Math.round((sightCount / totalLcCount) * 100) : 65;
+  const usancePct = totalLcCount > 0 ? Math.round((usanceCount / totalLcCount) * 100) : 35;
+  const leadStructure = sightPct >= usancePct ? 'Sight Lead' : 'Usance Lead';
+
   const sightUsanceData = [
-    { name: 'Sight Draft (Sight)', value: 65, color: '#4a6be9' },
-    { name: 'Term Usance (Usance)', value: 35, color: '#f59e0b' },
+    { name: `Sight Draft (Sight) - ${sightPct}%`, value: sightPct, color: '#4a6be9' },
+    { name: `Term Usance (Usance) - ${usancePct}%`, value: usancePct, color: '#f59e0b' },
   ];
 
   // Functional Exporter - CSV
   const handleExportCSV = () => {
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Facility Name,Limit Amount (Millions),Utilized Amount (Millions),Utilization Percentage\n"
-      + facilityChartData.map(e => `"${e.name}",${e.limit},${e.utilized},${((e.utilized/e.limit)*100).toFixed(1)}%`).join("\n");
+      + finalFacilityChartData.map(e => `"${e.name}",${e.limit},${e.utilized},${e.limit > 0 ? ((e.utilized/e.limit)*100).toFixed(1) : 0}%`).join("\n");
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -148,7 +188,7 @@ const Reports = () => {
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={facilityChartData}>
+              <BarChart data={finalFacilityChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1e293b' : '#e2e8f0'} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={9} />
                 <YAxis stroke="#94a3b8" fontSize={10} />
@@ -169,7 +209,7 @@ const Reports = () => {
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={regionalData} layout="vertical">
+              <BarChart data={finalRegionalData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1e293b' : '#e2e8f0'} />
                 <XAxis type="number" stroke="#94a3b8" fontSize={10} />
                 <YAxis dataKey="country" type="category" stroke="#94a3b8" fontSize={10} width={80} />
@@ -210,14 +250,14 @@ const Reports = () => {
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center text-center">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active LCs</span>
-                <span className="text-xl font-black">Sight Lead</span>
+                <span className="text-xl font-black">{leadStructure}</span>
               </div>
             </div>
 
             <div className="space-y-4 max-w-sm">
               <div className="p-4 rounded-2xl dark:bg-slate-900/40 bg-slate-50 border dark:border-slate-800 border-slate-100 text-xs leading-relaxed">
                 <h5 className="font-bold text-slate-700 dark:text-slate-200 mb-1 flex items-center gap-1">
-                  <Percent className="h-4 w-4 text-brand-500" /> Sight Draft Dominance (65%)
+                  <Percent className="h-4 w-4 text-brand-500" /> Sight Draft Dominance ({sightPct}%)
                 </h5>
                 <p className="text-slate-400">
                   Sight drafts dominate the export portfolio. Corporate clients prefer immediate payment against shipping presentations to maximize working capital liquidity.

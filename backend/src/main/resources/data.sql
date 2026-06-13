@@ -16,10 +16,10 @@ INSERT IGNORE INTO `users` (`username`, `password`, `email`, `full_name`, `role`
 ('admin', '$2a$10$8.UnVuG9HHgffUDAlk8GPuRGTwRKBt18aRjN.GJCp4e9.1z40.Ety', 'admin@tradevault.com', 'System Admin', 'ADMIN', 'ACTIVE');
 
 -- Insert Corporate Clients
-INSERT IGNORE INTO `corporate_clients` (`id`, `company_name`, `tax_id`, `country`, `status`, `credit_limit`) VALUES
-(1, 'Acme Industrial Holdings', 'TX-99887766', 'United States', 'ACTIVE', 50000000.00),
-(2, 'Global Trading Logistics LLC', 'TX-55443322', 'United Kingdom', 'ACTIVE', 25000000.00),
-(3, 'Nexus Electronics Corp', 'TX-11223344', 'Singapore', 'ACTIVE', 80000000.00);
+INSERT IGNORE INTO `corporate_clients` (`id`, `company_name`, `tax_id`, `country`, `status`, `credit_limit`, `registration_number`, `industry`, `kyc_status`) VALUES
+(1, 'Acme Industrial Holdings', 'TX-99887766', 'United States', 'ACTIVE', 50000000.00, 'REG-1001', 'Manufacturing', 'VERIFIED'),
+(2, 'Global Trading Logistics LLC', 'TX-55443322', 'United Kingdom', 'ACTIVE', 25000000.00, 'REG-1002', 'Logistics', 'VERIFIED'),
+(3, 'Nexus Electronics Corp', 'TX-11223344', 'Singapore', 'ACTIVE', 80000000.00, 'REG-1003', 'Electronics', 'VERIFIED');
 
 -- Insert Credit Facilities (Acme Industrial Holdings)
 INSERT IGNORE INTO `credit_facilities` (`id`, `client_id`, `facility_type`, `limit_amount`, `utilized_amount`, `currency`, `status`, `expiry_date`) VALUES
@@ -38,12 +38,12 @@ INSERT IGNORE INTO `credit_facilities` (`id`, `client_id`, `facility_type`, `lim
 (7, 3, 'REVOLVING_LINE', 30000000.00, 0.00, 'USD', 'ACTIVE', '2028-12-31');
 
 -- Insert Letters of Credit
-INSERT IGNORE INTO `letters_of_credit` (`id`, `client_id`, `credit_facility_id`, `lc_number`, `lc_type`, `amount`, `currency`, `applicant_name`, `beneficiary_name`, `issue_date`, `expiry_date`, `status`, `tolerance_percentage`, `port_of_loading`, `port_of_discharge`, `latest_shipment_date`) VALUES
-(1, 1, 1, 'LC-2026-0001', 'SIGHT', 1500000.00, 'USD', 'Acme Industrial Holdings', 'Tokyo Steel Alloys Inc.', '2026-01-10', '2026-10-10', 'ACTIVE', 5.00, 'Port of Yokohama', 'Port of Los Angeles', '2026-09-15'),
-(2, 1, 1, 'LC-2026-0002', 'USANCE', 3000000.00, 'USD', 'Acme Industrial Holdings', 'Berlin Motor Parts GmbH', '2026-03-01', '2026-12-01', 'IN_REVIEW', 10.00, 'Port of Hamburg', 'Port of New York', '2026-11-01'),
-(3, 2, 4, 'LC-2026-0003', 'SIGHT', 3200000.00, 'USD', 'Global Trading Logistics LLC', 'Shanghai Shipping Conglomerate', '2026-02-15', '2026-09-15', 'ACTIVE', 0.00, 'Port of Shanghai', 'Port of London', '2026-08-30'),
-(4, 3, 6, 'LC-2026-0004', 'SIGHT', 12000000.00, 'USD', 'Nexus Electronics Corp', 'Shenzhen Semiconductor Co', '2026-04-01', '2027-04-01', 'APPROVED', 2.00, 'Port of Shenzhen', 'Port of Singapore', '2027-02-28'),
-(5, 3, 6, 'LC-2026-0005', 'USANCE', 12000000.00, 'USD', 'Nexus Electronics Corp', 'Taipei Silicon Foundry Ltd', '2026-05-10', '2027-05-10', 'ACTIVE', 5.00, 'Port of Keelung', 'Port of Singapore', '2027-04-15');
+INSERT IGNORE INTO `letters_of_credit` (`id`, `client_id`, `credit_facility_id`, `lc_number`, `lc_type`, `amount`, `currency`, `applicant_name`, `beneficiary_name`, `beneficiary_country`, `issue_date`, `expiry_date`, `status`, `tolerance_percentage`, `port_of_loading`, `port_of_discharge`, `latest_shipment_date`) VALUES
+(1, 1, 1, 'LC-2026-0001', 'SIGHT', 1500000.00, 'USD', 'Acme Industrial Holdings', 'Tokyo Steel Alloys Inc.', 'Japan', '2026-01-10', '2026-10-10', 'ACTIVE', 5.00, 'Port of Yokohama', 'Port of Los Angeles', '2026-09-15'),
+(2, 1, 1, 'LC-2026-0002', 'USANCE', 3000000.00, 'USD', 'Acme Industrial Holdings', 'Berlin Motor Parts GmbH', 'Germany', '2026-03-01', '2026-12-01', 'IN_REVIEW', 10.00, 'Port of Hamburg', 'Port of New York', '2026-11-01'),
+(3, 2, 4, 'LC-2026-0003', 'SIGHT', 3200000.00, 'USD', 'Global Trading Logistics LLC', 'Shanghai Shipping Conglomerate', 'China', '2026-02-15', '2026-09-15', 'ACTIVE', 0.00, 'Port of Shanghai', 'Port of London', '2026-08-30'),
+(4, 3, 6, 'LC-2026-0004', 'SIGHT', 12000000.00, 'USD', 'Nexus Electronics Corp', 'Shenzhen Semiconductor Co', 'China', '2026-04-01', '2027-04-01', 'APPROVED', 2.00, 'Port of Shenzhen', 'Port of Singapore', '2027-02-28'),
+(5, 3, 6, 'LC-2026-0005', 'USANCE', 12000000.00, 'USD', 'Nexus Electronics Corp', 'Taipei Silicon Foundry Ltd', 'Taiwan', '2026-05-10', '2027-05-10', 'ACTIVE', 5.00, 'Port of Keelung', 'Port of Singapore', '2027-04-15');
 
 -- Insert LC Drawings
 INSERT IGNORE INTO `lc_drawings` (`id`, `lc_id`, `drawing_ref`, `amount`, `currency`, `status`, `presentation_date`, `documents_presented`, `discrepancy_notes`) VALUES
@@ -54,7 +54,7 @@ INSERT IGNORE INTO `lc_drawings` (`id`, `lc_id`, `drawing_ref`, `amount`, `curre
 -- Insert LC Amendments
 INSERT IGNORE INTO `lc_amendments` (`id`, `lc_id`, `amendment_number`, `previous_amount`, `new_amount`, `previous_expiry_date`, `new_expiry_date`, `status`, `justification`, `created_by`) VALUES
 (1, 1, 1, 1200000.00, 1500000.00, '2026-08-10', '2026-10-10', 'APPROVED', 'Increase in order size and logistics delays', 'ops'),
-(2, 5, 1, 10000000.00, 12000000.00, '2027-05-10', '2027-05-10', 'PENDING_APPROVAL', 'Additional shipment of fabrication machines requested', 'client');
+(5, 1, 2, 10000000.00, 12000000.00, '2027-05-10', '2027-05-10', 'PENDING_APPROVAL', 'Additional shipment of fabrication machines requested', 'client');
 
 -- Insert Bank Guarantees
 INSERT IGNORE INTO `bank_guarantees` (`id`, `client_id`, `credit_facility_id`, `bg_number`, `bg_type`, `amount`, `currency`, `beneficiary_name`, `issue_date`, `expiry_date`, `status`, `terms_conditions`) VALUES
@@ -88,12 +88,12 @@ INSERT IGNORE INTO `compliance_cases` (`id`, `screening_id`, `case_status`, `ass
 (2, 4, 'UNDER_INVESTIGATION', 'compliance', 'Analyzing corporate shareholding certificates to verify Ultimate Beneficial Owner (UBO) status.');
 
 -- Insert Notifications
-INSERT IGNORE INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `is_read`) VALUES
-(1, 1, 'LC Approved', 'Your Letter of Credit LC-2026-0004 has been approved by the Relationship Manager.', 'INFO', FALSE),
-(2, 1, 'Drawing Discrepancy Found', 'A discrepancy has been reported on your drawing DRW-LC003-A. Please review notes.', 'ALERT', FALSE),
-(3, 5, 'Sanctions Alert!', 'A high match sanctions screening alert (89.5% score) has been triggered for LC-2026-0002.', 'ALERT', FALSE),
-(4, 2, 'Credit Limit Approaching', 'Global Trading Logistics revolving limit is 80% utilized. Please consider extension.', 'WARNING', FALSE),
-(5, 2, 'LC Amendment Approval Required', 'Corporate client has requested an amendment on LC-2026-0005. Action required.', 'APPROVAL', FALSE);
+INSERT IGNORE INTO `notifications` (`id`, `user_id`, `title`, `message`, `category`, `status`) VALUES
+(1, 1, 'LC Approved', 'Your Letter of Credit LC-2026-0004 has been approved by the Relationship Manager.', 'INFO', 'UNREAD'),
+(2, 1, 'Drawing Discrepancy Found', 'A discrepancy has been reported on your drawing DRW-LC003-A. Please review notes.', 'ALERT', 'UNREAD'),
+(3, 5, 'Sanctions Alert!', 'A high match sanctions screening alert (89.5% score) has been triggered for LC-2026-0002.', 'ALERT', 'UNREAD'),
+(4, 2, 'Credit Limit Approaching', 'Global Trading Logistics revolving limit is 80% utilized. Please consider extension.', 'WARNING', 'UNREAD'),
+(5, 2, 'LC Amendment Approval Required', 'Corporate client has requested an amendment on LC-2026-0005. Action required.', 'APPROVAL', 'UNREAD');
 
 -- Insert Audit Logs
 INSERT IGNORE INTO `audit_logs` (`id`, `user_id`, `username`, `action`, `details`, `ip_address`) VALUES

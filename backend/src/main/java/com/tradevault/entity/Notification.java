@@ -2,9 +2,18 @@ package com.tradevault.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.tradevault.entity.enums.NotificationCategory;
+import com.tradevault.entity.enums.NotificationStatus;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import lombok.*;
 
 @Entity
 @Table(name = "notifications")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Notification {
 
     @Id
@@ -20,43 +29,55 @@ public class Notification {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
-    @Column(length = 30)
-    private String type = "INFO"; // INFO, WARNING, ALERT, APPROVAL
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "category", length = 30)
+    private NotificationCategory category = NotificationCategory.INFO;
 
-    @Column(name = "is_read")
-    private Boolean isRead = false;
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", length = 30)
+    private NotificationStatus status = NotificationStatus.UNREAD;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public Notification() {}
 
-    public Notification(Long userId, String title, String message, String type) {
+    public Notification(Long userId, String title, String message, String categoryStr) {
         this.userId = userId;
         this.title = title;
         this.message = message;
-        this.type = type;
+        setType(categoryStr);
     }
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    // Backward compatibility for 'type'
+    public String getType() {
+        return category != null ? category.name() : null;
+    }
+    public void setType(String type) {
+        if (type != null) {
+            try {
+                this.category = NotificationCategory.valueOf(type.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Try titlecase/camelcase or custom
+                for (NotificationCategory cat : NotificationCategory.values()) {
+                    if (cat.name().equalsIgnoreCase(type)) {
+                        this.category = cat;
+                        return;
+                    }
+                }
+                this.category = NotificationCategory.INFO;
+            }
+        }
+    }
 
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
-
-    public Boolean getIsRead() { return isRead; }
-    public void setIsRead(Boolean isRead) { this.isRead = isRead; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    // Backward compatibility for 'isRead'
+    public Boolean getIsRead() {
+        return status == NotificationStatus.READ;
+    }
+    public void setIsRead(Boolean isRead) {
+        this.status = isRead ? NotificationStatus.READ : NotificationStatus.UNREAD;
+    }
 }
