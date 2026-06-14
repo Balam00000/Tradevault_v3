@@ -37,7 +37,7 @@ class LetterOfCreditServiceTest {
     @Mock private NotificationRepository notificationRepository;
 
     @InjectMocks
-    private LetterOfCreditService lcService;
+    private LetterOfCreditServiceImpl lcService;
 
     // ─── Test Fixtures ─────────────────────────────────────────────────────────
 

@@ -3,6 +3,7 @@ package com.tradevault.controller;
 import com.tradevault.dto.ApiResponse;
 import com.tradevault.entity.*;
 import com.tradevault.service.LetterOfCreditService;
+import com.tradevault.security.TradeSecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,38 +31,10 @@ public class LetterOfCreditController {
     private com.tradevault.repository.UserRepository userRepository;
 
     @Autowired
-    private com.tradevault.repository.CorporateClientRepository corporateClientRepository;
+    private com.tradevault.repository.LCAmendmentRepository amendmentRepository;
 
-    private void checkLcAccess(LetterOfCredit lc, Principal principal) {
-        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
-        if ("CLIENT".equals(user.getRole())) {
-            if (user.getCorporateClient() == null || !lc.getClient().getId().equals(user.getCorporateClient().getId())) {
-                logger.warn("LC access denied: username='{}' attempted to access lcId={}", user.getUsername(), lc.getId());
-                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this Letter of Credit");
-            }
-        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
-            if (lc.getClient().getRelationshipManagerId() == null || !lc.getClient().getRelationshipManagerId().equals(user.getId())) {
-                logger.warn("LC access denied: RM username='{}' attempted to access non-assigned lcId={}", user.getUsername(), lc.getId());
-                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this Letter of Credit (not assigned to you)");
-            }
-        }
-    }
-
-    private void checkClientAccess(Long clientId, Principal principal) {
-        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
-        if ("CLIENT".equals(user.getRole())) {
-            if (user.getCorporateClient() == null || !user.getCorporateClient().getId().equals(clientId)) {
-                logger.warn("Client access denied: username='{}' attempted to access clientId={}", user.getUsername(), clientId);
-                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data");
-            }
-        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
-            com.tradevault.entity.CorporateClient client = corporateClientRepository.findById(clientId).orElseThrow();
-            if (client.getRelationshipManagerId() == null || !client.getRelationshipManagerId().equals(user.getId())) {
-                logger.warn("Client access denied: RM username='{}' attempted to access non-assigned clientId={}", user.getUsername(), clientId);
-                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data (not assigned to you)");
-            }
-        }
-    }
+    @Autowired
+    private TradeSecurityService tradeSecurityService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<LetterOfCredit>>> getAllLCs(Principal principal) {
@@ -87,7 +60,7 @@ public class LetterOfCreditController {
     @GetMapping("/client/{clientId}")
     public ResponseEntity<ApiResponse<List<LetterOfCredit>>> getLCsByClientId(@PathVariable Long clientId, Principal principal) {
         logger.debug("GetLCsByClientId clientId={} requested by username='{}'", clientId, principal.getName());
-        checkClientAccess(clientId, principal);
+        tradeSecurityService.checkClientAccess(clientId, principal);
         List<LetterOfCredit> lcs = lcService.getLCsByClientId(clientId);
         logger.info("Retrieved {} LCs for clientId={}", lcs.size(), clientId);
         return ResponseEntity.ok(ApiResponse.success("Letters of Credit for client fetched", lcs));
@@ -97,7 +70,7 @@ public class LetterOfCreditController {
     public ResponseEntity<ApiResponse<LetterOfCredit>> getLCById(@PathVariable Long id, Principal principal) {
         logger.debug("GetLCById id={} requested by username='{}'", id, principal.getName());
         LetterOfCredit lc = lcService.getLCById(id);
-        checkLcAccess(lc, principal);
+        tradeSecurityService.checkLcAccess(lc, principal);
         return ResponseEntity.ok(ApiResponse.success("Letter of Credit details", lc));
     }
 
@@ -108,7 +81,7 @@ public class LetterOfCreditController {
             @RequestParam Long facilityId,
             Principal principal) {
         logger.info("LC create request: clientId={}, facilityId={}, by username='{}'", clientId, facilityId, principal.getName());
-        checkClientAccess(clientId, principal);
+        tradeSecurityService.checkClientAccess(clientId, principal);
         LetterOfCredit created = lcService.createLC(lc, clientId, facilityId, principal.getName());
         logger.info("LC created: lcNumber='{}', by username='{}'", created.getLcNumber(), principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Letter of Credit draft created successfully", created));
@@ -123,7 +96,7 @@ public class LetterOfCreditController {
         String status = payload.get("status");
         logger.info("LC status update request: lcId={}, targetStatus='{}', by username='{}'", id, status, principal.getName());
         LetterOfCredit lc = lcService.getLCById(id);
-        checkLcAccess(lc, principal);
+        tradeSecurityService.checkLcAccess(lc, principal);
 
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         if ("CLIENT".equals(user.getRole())) {
@@ -147,7 +120,7 @@ public class LetterOfCreditController {
     public ResponseEntity<ApiResponse<List<LCAmendment>>> getAmendments(@PathVariable Long id, Principal principal) {
         logger.debug("GetAmendments for lcId={} requested by username='{}'", id, principal.getName());
         LetterOfCredit lc = lcService.getLCById(id);
-        checkLcAccess(lc, principal);
+        tradeSecurityService.checkLcAccess(lc, principal);
         List<LCAmendment> amendments = lcService.getAmendments(id);
         logger.info("Retrieved {} amendments for lcId={}", amendments.size(), id);
         return ResponseEntity.ok(ApiResponse.success("LC Amendments fetched", amendments));
@@ -159,7 +132,7 @@ public class LetterOfCreditController {
             @RequestBody Map<String, Object> payload,
             Principal principal) {
         LetterOfCredit lc = lcService.getLCById(id);
-        checkLcAccess(lc, principal);
+        tradeSecurityService.checkLcAccess(lc, principal);
         BigDecimal newAmount = new BigDecimal(payload.get("newAmount").toString());
         LocalDate newExpiry = LocalDate.parse(payload.get("newExpiryDate").toString());
         String justification = payload.get("justification").toString();
@@ -178,6 +151,9 @@ public class LetterOfCreditController {
             Principal principal) {
         String status = payload.get("status");
         logger.info("Processing LC amendment: amendmentId={}, targetStatus='{}', by username='{}'", amendmentId, status, principal.getName());
+        LCAmendment amendment = amendmentRepository.findById(amendmentId)
+                .orElseThrow(() -> new com.tradevault.exception.ResourceNotFoundException("Amendment not found"));
+        tradeSecurityService.checkLcAccess(amendment.getLc(), principal);
         LCAmendment processed = lcService.processAmendment(amendmentId, status, principal.getName());
         logger.info("LC amendment processed to status='{}': amendmentId={}", status, amendmentId);
         return ResponseEntity.ok(ApiResponse.success("Amendment processed successfully", processed));
@@ -188,7 +164,7 @@ public class LetterOfCreditController {
     public ResponseEntity<ApiResponse<List<LCDrawing>>> getDrawings(@PathVariable Long id, Principal principal) {
         logger.debug("GetDrawings for lcId={} requested by username='{}'", id, principal.getName());
         LetterOfCredit lc = lcService.getLCById(id);
-        checkLcAccess(lc, principal);
+        tradeSecurityService.checkLcAccess(lc, principal);
         List<LCDrawing> drawings = lcService.getDrawings(id);
         logger.info("Retrieved {} drawings for lcId={}", drawings.size(), id);
         return ResponseEntity.ok(ApiResponse.success("LC Drawings fetched", drawings));
@@ -200,7 +176,7 @@ public class LetterOfCreditController {
             @RequestBody Map<String, Object> payload,
             Principal principal) {
         LetterOfCredit lc = lcService.getLCById(id);
-        checkLcAccess(lc, principal);
+        tradeSecurityService.checkLcAccess(lc, principal);
         BigDecimal amount = new BigDecimal(payload.get("amount").toString());
         String documents = payload.get("documentsPresented").toString();
         logger.info("LC drawing presented: lcId={}, amount={}, by username='{}'", id, amount, principal.getName());

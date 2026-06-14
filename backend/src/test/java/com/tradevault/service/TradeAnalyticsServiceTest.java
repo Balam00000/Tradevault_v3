@@ -29,7 +29,7 @@ class TradeAnalyticsServiceTest {
     @Mock private ComplianceCaseRepository caseRepository;
 
     @InjectMocks
-    private TradeAnalyticsService analyticsService;
+    private TradeAnalyticsServiceImpl analyticsService;
 
     // ─── Fixture helpers ──────────────────────────────────────────────────────
 

@@ -18,6 +18,7 @@ import AuditLedger from './pages/AuditLedger';
 import Profile from './pages/Profile';
 import UserManagement from './pages/UserManagement';
 import CorporateManagement from './pages/CorporateManagement';
+import Notifications from './pages/Notifications';
 
 function App() {
   return (
@@ -73,7 +74,7 @@ function App() {
           <Route 
             path="/bills" 
             element={
-              <ProtectedRoute allowedRoles={['CLIENT', 'OPERATIONS', 'ADMIN']}>
+              <ProtectedRoute allowedRoles={['CLIENT', 'OPERATIONS', 'ADMIN', 'RELATIONSHIP_MANAGER']}>
                 <Layout>
                   <BillsCollections />
                 </Layout>
@@ -123,9 +124,19 @@ function App() {
           <Route 
             path="/corporates" 
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'RELATIONSHIP_MANAGER']}>
                 <Layout>
                   <CorporateManagement />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/notifications" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Notifications />
                 </Layout>
               </ProtectedRoute>
             } 

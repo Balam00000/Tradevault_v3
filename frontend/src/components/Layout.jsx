@@ -65,15 +65,16 @@ const Layout = ({ children }) => {
   };
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/', roles: ['CLIENT', 'OPERATIONS', 'RELATIONSHIP_MANAGER', 'TREASURY', 'COMPLIANCE', 'ADMIN'] },
-    { name: 'Letters of Credit', icon: FileText, path: '/lcs', roles: ['CLIENT', 'OPERATIONS', 'RELATIONSHIP_MANAGER', 'TREASURY', 'COMPLIANCE', 'ADMIN'] },
-    { name: 'Bank Guarantees', icon: Award, path: '/bgs', roles: ['CLIENT', 'OPERATIONS', 'RELATIONSHIP_MANAGER', 'TREASURY', 'COMPLIANCE', 'ADMIN'] },
-    { name: 'Export & Collections', icon: FileSpreadsheet, path: '/bills', roles: ['CLIENT', 'OPERATIONS', 'ADMIN'] },
-    { name: 'Compliance Registry', icon: ShieldAlert, path: '/compliance', roles: ['COMPLIANCE', 'ADMIN'] },
-    { name: 'Reports & Analytics', icon: BarChart3, path: '/reports', roles: ['CLIENT', 'TREASURY', 'OPERATIONS', 'ADMIN'] },
-    { name: 'Audit Ledger', icon: History, path: '/audit-logs', roles: ['ADMIN'] },
-    { name: 'Corporate Clients', icon: Building2, path: '/corporates', roles: ['ADMIN'] },
-    { name: 'User Control', icon: UserCheck, path: '/user-management', roles: ['ADMIN'] },
+    { name: 'Dashboard',           icon: LayoutDashboard, path: '/',                roles: ['CLIENT', 'OPERATIONS', 'RELATIONSHIP_MANAGER', 'TREASURY', 'COMPLIANCE', 'ADMIN'] },
+    { name: 'Letters of Credit',   icon: FileText,        path: '/lcs',             roles: ['CLIENT', 'OPERATIONS', 'RELATIONSHIP_MANAGER', 'TREASURY', 'COMPLIANCE', 'ADMIN'] },
+    { name: 'Bank Guarantees',     icon: Award,           path: '/bgs',             roles: ['CLIENT', 'OPERATIONS', 'RELATIONSHIP_MANAGER', 'TREASURY', 'COMPLIANCE', 'ADMIN'] },
+    { name: 'Export & Collections',icon: FileSpreadsheet, path: '/bills',           roles: ['CLIENT', 'OPERATIONS', 'ADMIN', 'RELATIONSHIP_MANAGER'] },
+    { name: 'Compliance Registry', icon: ShieldAlert,     path: '/compliance',      roles: ['COMPLIANCE', 'ADMIN'] },
+    { name: 'Reports & Analytics', icon: BarChart3,       path: '/reports',         roles: ['CLIENT', 'TREASURY', 'OPERATIONS', 'ADMIN'] },
+    { name: 'Notifications',       icon: Bell,            path: '/notifications',   roles: ['CLIENT', 'OPERATIONS', 'RELATIONSHIP_MANAGER', 'TREASURY', 'COMPLIANCE', 'ADMIN'] },
+    { name: 'Audit Ledger',        icon: History,         path: '/audit-logs',      roles: ['ADMIN'] },
+    { name: 'Corporate Clients',   icon: Building2,       path: '/corporates',      roles: ['ADMIN', 'RELATIONSHIP_MANAGER'] },
+    { name: 'User Control',        icon: UserCheck,       path: '/user-management', roles: ['ADMIN'] },
   ];
 
   const filteredMenuItems = menuItems.filter(item => item.roles.includes(user?.role));
@@ -178,10 +179,11 @@ const Layout = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-4 relative">
-            {/* Notification drop-down */}
+            {/* Bell icon — navigates to Notifications page */}
             <button 
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => navigate('/notifications')}
               className="p-2 rounded-xl relative border dark:border-slate-900 border-slate-200 dark:hover:bg-slate-900 hover:bg-slate-100 transition-colors"
+              title="View Notifications"
             >
               <Bell className="h-5 w-5 text-slate-600 dark:text-slate-400" />
               {unreadCount > 0 && (
@@ -190,31 +192,6 @@ const Layout = ({ children }) => {
                 </span>
               )}
             </button>
-
-            {/* Notification Drawer Pop-over */}
-            {showNotifications && (
-              <div className="absolute right-0 top-12 w-80 rounded-2xl border dark:border-slate-800 border-slate-200 dark:bg-slate-900 bg-white shadow-2xl z-50 p-4 space-y-3">
-                <div className="flex items-center justify-between border-b dark:border-slate-850 pb-2">
-                  <h4 className="font-bold text-sm">Notifications &amp; Reminders</h4>
-                  <button onClick={markAllAsRead} className="text-xs text-brand-500 hover:underline">Mark read</button>
-                </div>
-                <div className="max-h-60 overflow-y-auto space-y-2">
-                  {notifications.length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center py-4">No active notifications</p>
-                  ) : (
-                    notifications.map(n => (
-                      <div key={n.id} className={`p-2.5 rounded-xl text-xs border transition-colors ${n.isRead ? 'dark:bg-slate-950/40 bg-slate-50 dark:border-slate-900 border-slate-100' : 'dark:bg-brand-500/5 bg-brand-50/40 dark:border-brand-500/20 border-brand-100'}`}>
-                        <div className="flex items-center justify-between font-bold mb-1">
-                          <span>{n.title}</span>
-                          <span className={`h-1.5 w-1.5 rounded-full ${n.type === 'ALERT' ? 'bg-rose-500' : n.type === 'WARNING' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-                        </div>
-                        <p className="text-slate-500 dark:text-slate-400">{n.message}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </header>
 

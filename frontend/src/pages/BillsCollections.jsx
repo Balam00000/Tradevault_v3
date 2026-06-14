@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 const BillsCollections = () => {
-  const { user, isClient, isOps, isAdmin, corporateClientId } = useAuth();
+  const { user, isClient, isOps, isRM, isAdmin, corporateClientId } = useAuth();
   const canUpdateStatus = isOps || isAdmin;
   
   // Data State

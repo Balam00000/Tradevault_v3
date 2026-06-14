@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 class AuditLogServiceTest {
 
     @Mock private AuditLogRepository auditLogRepository;
-    @InjectMocks private AuditLogService auditLogService;
+    @InjectMocks private AuditLogServiceImpl auditLogService;
 
     @Test
     @DisplayName("log: should persist audit entry with correct fields")

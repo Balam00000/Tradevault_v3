@@ -32,7 +32,7 @@ class ExportBillServiceTest {
     @Mock private SanctionsScreeningRepository sanctionsScreeningRepository;
 
     @InjectMocks
-    private ExportBillService billService;
+    private ExportBillServiceImpl billService;
 
     private CorporateClient buildClient(Long id) {
         CorporateClient c = new CorporateClient();

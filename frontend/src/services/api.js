@@ -261,12 +261,51 @@ api.interceptors.response.use(
 
     // 8. In-app Alert Notifications Mocks
     if (url.includes('/notifications')) {
+      // Mark single notification as read
+      if (url.match(/\/notifications\/\d+\/read$/)) {
+        const id = parseInt(url.split('/').slice(-2)[0]);
+        const n = mockDb.notifications.find(x => x.id === id);
+        if (n) n.isRead = true;
+        return Promise.resolve(createMockResponse(null, 'Notification marked as read (Mock)'));
+      }
+      // Unread only
+      if (url.includes('/unread')) {
+        return Promise.resolve(createMockResponse(mockDb.notifications.filter(n => !n.isRead), 'Unread notifications (Mock)'));
+      }
       return Promise.resolve(createMockResponse(mockDb.notifications, 'Notifications loaded (Mock)'));
     }
 
     // 9. Audit Logs Mocks
     if (url.includes('/audit-logs')) {
       return Promise.resolve(createMockResponse(mockDb.auditLogs, 'Audit logs loaded (Mock)'));
+    }
+
+    // 10. Trade Reports Mocks
+    if (url.includes('/reports')) {
+      const mockReports = [
+        { id: 1, reportTitle: 'Q1 2026 Global Exposure Summary', scope: 'PERIOD', generatedAt: '2026-04-01T09:00:00', totalExposure: 18200000, totalTransactions: 12, status: 'COMPLETED' },
+        { id: 2, reportTitle: 'Client Portfolio Report — Acme Industrial', scope: 'CLIENT', generatedAt: '2026-05-15T14:22:00', totalExposure: 7500000, totalTransactions: 5, status: 'COMPLETED' },
+        { id: 3, reportTitle: 'Product Mix Analysis — LCs & BGs', scope: 'PRODUCT', generatedAt: '2026-06-01T10:05:00', totalExposure: 15000000, totalTransactions: 8, status: 'COMPLETED' },
+        { id: 4, reportTitle: 'Branch Distribution Report', scope: 'BRANCH', generatedAt: '2026-06-10T11:30:00', totalExposure: 22000000, totalTransactions: 15, status: 'COMPLETED' },
+      ];
+      if (url.includes('/generate')) {
+        const scope = (url.split('scope=')[1] || 'PERIOD').toUpperCase();
+        const newReport = {
+          id: mockReports.length + 1,
+          reportTitle: `Generated ${scope} Report — ${new Date().toLocaleDateString()}`,
+          scope,
+          generatedAt: new Date().toISOString(),
+          totalExposure: Math.floor(Math.random() * 20000000) + 5000000,
+          totalTransactions: Math.floor(Math.random() * 20) + 5,
+          status: 'COMPLETED'
+        };
+        return Promise.resolve(createMockResponse(newReport, 'Report generated (Mock)'));
+      }
+      if (url.includes('/scope/')) {
+        const scope = url.split('/scope/')[1].toUpperCase();
+        return Promise.resolve(createMockResponse(mockReports.filter(r => r.scope === scope), 'Reports by scope (Mock)'));
+      }
+      return Promise.resolve(createMockResponse(mockReports, 'Trade reports loaded (Mock)'));
     }
 
     // Default error mapping if no mock match is found

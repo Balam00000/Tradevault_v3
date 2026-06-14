@@ -4,6 +4,7 @@ import com.tradevault.dto.ApiResponse;
 import com.tradevault.entity.Notification;
 import com.tradevault.entity.User;
 import com.tradevault.repository.NotificationRepository;
+import com.tradevault.security.TradeSecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,19 +27,13 @@ public class NotificationController {
     @Autowired
     private com.tradevault.repository.UserRepository userRepository;
 
-    private void verifyUserAccess(Long userId, Principal principal) {
-        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
-        if (!user.getId().equals(userId)) {
-            logger.warn("Notification access denied: username='{}' (userId={}) attempted to access notifications of userId={}",
-                    user.getUsername(), user.getId(), userId);
-            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access these notifications");
-        }
-    }
+    @Autowired
+    private TradeSecurityService tradeSecurityService;
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<List<Notification>>> getNotifications(@PathVariable Long userId, Principal principal) {
         logger.debug("GetNotifications for userId={} requested by username='{}'", userId, principal.getName());
-        verifyUserAccess(userId, principal);
+        tradeSecurityService.verifyUserAccess(userId, principal);
         List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
         logger.info("Retrieved {} notifications for userId={}", notifications.size(), userId);
         return ResponseEntity.ok(ApiResponse.success("Notifications fetched", notifications));
@@ -47,7 +42,7 @@ public class NotificationController {
     @GetMapping("/user/{userId}/unread")
     public ResponseEntity<ApiResponse<List<Notification>>> getUnreadNotifications(@PathVariable Long userId, Principal principal) {
         logger.debug("GetUnreadNotifications for userId={} requested by username='{}'", userId, principal.getName());
-        verifyUserAccess(userId, principal);
+        tradeSecurityService.verifyUserAccess(userId, principal);
         List<Notification> notifications = notificationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, com.tradevault.entity.enums.NotificationStatus.UNREAD);
         logger.info("Retrieved {} unread notifications for userId={}", notifications.size(), userId);
         return ResponseEntity.ok(ApiResponse.success("Unread notifications fetched", notifications));

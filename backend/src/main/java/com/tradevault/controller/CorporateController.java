@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.tradevault.security.TradeSecurityService;
 
 import java.security.Principal;
 import java.math.BigDecimal;
@@ -34,6 +35,9 @@ public class CorporateController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private TradeSecurityService tradeSecurityService;
+
     // ─── Auth helpers ─────────────────────────────────────────────────────────
 
     private User resolveUser(Principal principal) {
@@ -46,24 +50,6 @@ public class CorporateController {
             logger.warn("Unauthorized admin action attempted by username='{}', role='{}'", u.getUsername(), u.getRole());
             throw new org.springframework.security.access.AccessDeniedException(
                     "Only administrators can perform this action");
-        }
-    }
-
-    private void checkClientAccess(Long clientId, Principal principal) {
-        User user = resolveUser(principal);
-        if ("CLIENT".equals(user.getRole())) {
-            if (user.getCorporateClient() == null || !user.getCorporateClient().getId().equals(clientId)) {
-                logger.warn("Client access denied: username='{}' attempted to access clientId={}", user.getUsername(), clientId);
-                throw new org.springframework.security.access.AccessDeniedException(
-                        "You do not have permission to access this client's data");
-            }
-        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
-            CorporateClient client = clientRepository.findById(clientId).orElseThrow();
-            if (client.getRelationshipManagerId() == null || !client.getRelationshipManagerId().equals(user.getId())) {
-                logger.warn("Client access denied: RM username='{}' attempted to access non-assigned clientId={}", user.getUsername(), clientId);
-                throw new org.springframework.security.access.AccessDeniedException(
-                        "You do not have permission to access this client's data (not assigned to you)");
-            }
         }
     }
 
@@ -102,7 +88,7 @@ public class CorporateController {
     public ResponseEntity<ApiResponse<CorporateClient>> getClientById(
             @PathVariable Long id, Principal principal) {
         logger.debug("GetClientById id={} requested by username='{}'", id, principal.getName());
-        checkClientAccess(id, principal);
+        tradeSecurityService.checkClientAccess(id, principal);
         CorporateClient client = clientRepository.findById(id).orElseThrow();
         logger.debug("Corporate client found: clientId={}, company='{}'", id, client.getCompanyName());
         return ResponseEntity.ok(ApiResponse.success("Corporate client details", client));
@@ -176,7 +162,7 @@ public class CorporateController {
     public ResponseEntity<ApiResponse<List<CreditFacility>>> getFacilitiesByClient(
             @PathVariable Long clientId, Principal principal) {
         logger.debug("GetFacilitiesByClient clientId={} requested by username='{}'", clientId, principal.getName());
-        checkClientAccess(clientId, principal);
+        tradeSecurityService.checkClientAccess(clientId, principal);
         List<CreditFacility> facilities = facilityRepository.findByClientId(clientId);
         logger.info("Retrieved {} facilities for clientId={}", facilities.size(), clientId);
         return ResponseEntity.ok(ApiResponse.success("Credit facilities fetched for client", facilities));

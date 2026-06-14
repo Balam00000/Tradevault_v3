@@ -28,7 +28,7 @@ class SanctionsScreeningServiceTest {
     @Mock private ComplianceCaseRepository caseRepository;
 
     @InjectMocks
-    private SanctionsScreeningService screeningService;
+    private SanctionsScreeningServiceImpl screeningService;
 
     // ─── screenEntity — CLEARED ────────────────────────────────────────────────
 

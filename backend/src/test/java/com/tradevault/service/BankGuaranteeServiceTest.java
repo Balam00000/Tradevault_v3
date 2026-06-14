@@ -34,7 +34,7 @@ class BankGuaranteeServiceTest {
     @Mock private SanctionsScreeningRepository sanctionsScreeningRepository;
 
     @InjectMocks
-    private BankGuaranteeService bgService;
+    private BankGuaranteeServiceImpl bgService;
 
     // ─── Fixtures ─────────────────────────────────────────────────────────────
 

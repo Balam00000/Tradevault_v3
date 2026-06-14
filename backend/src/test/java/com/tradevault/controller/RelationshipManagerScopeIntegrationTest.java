@@ -39,6 +39,7 @@ class RelationshipManagerScopeIntegrationTest {
     @Autowired private BankGuaranteeRepository bgRepository;
     @Autowired private ExportBillRepository billRepository;
     @Autowired private CollectionInstructionRepository instructionRepository;
+    @Autowired private LCAmendmentRepository amendmentRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private User rmUser1;
@@ -379,5 +380,172 @@ class RelationshipManagerScopeIntegrationTest {
                 .andExpect(jsonPath("$.data.utilizationRate").value(30.00))
                 .andExpect(jsonPath("$.data.activeLcsCount").value(1))
                 .andExpect(jsonPath("$.data.activeBgsCount").value(1));
+    }
+
+    @Test
+    @DisplayName("PUT /lcs/amendments/{id}: RM1 should be denied processing amendment for Client B's LC")
+    void processAmendment_RM1_deniedForLcB() throws Exception {
+        LCAmendment amendment = new LCAmendment();
+        amendment.setLc(lcB);
+        amendment.setAmendmentNumber(1);
+        amendment.setPreviousAmount(new BigDecimal("200000"));
+        amendment.setNewAmount(new BigDecimal("250000"));
+        amendment.setPreviousExpiryDate(LocalDate.now().plusMonths(6));
+        amendment.setNewExpiryDate(LocalDate.now().plusMonths(9));
+        amendment.setCreatedBy("rm_test_2");
+        amendment.setStatus(LCAmendmentStatus.PENDING_APPROVAL);
+        amendment = amendmentRepository.save(amendment);
+
+        java.util.Map<String, String> payload = new java.util.HashMap<>();
+        payload.put("status", "APPROVED");
+
+        mockMvc.perform(put("/lcs/amendments/" + amendment.getId())
+                        .header("Authorization", "Bearer " + rm1Token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("PUT /bgs/{id}/status: RM1 should be denied updating status for Client B's BG")
+    void updateBgStatus_RM1_deniedForBgB() throws Exception {
+        java.util.Map<String, String> payload = new java.util.HashMap<>();
+        payload.put("status", "RELEASED");
+
+        mockMvc.perform(put("/bgs/" + bgB.getId() + "/status")
+                        .header("Authorization", "Bearer " + rm1Token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("PUT /lcs/{id}/status: RM1 should be denied updating status for Client B's LC")
+    void updateLcStatus_RM1_deniedForLcB() throws Exception {
+        java.util.Map<String, String> payload = new java.util.HashMap<>();
+        payload.put("status", "ACTIVE");
+
+        mockMvc.perform(put("/lcs/" + lcB.getId() + "/status")
+                        .header("Authorization", "Bearer " + rm1Token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /lcs/{id}/amendments: RM1 should be denied requesting amendment for Client B's LC")
+    void requestAmendment_RM1_deniedForLcB() throws Exception {
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("newAmount", "250000");
+        payload.put("newExpiryDate", LocalDate.now().plusMonths(9).toString());
+        payload.put("justification", "Increase amount");
+
+        mockMvc.perform(post("/lcs/" + lcB.getId() + "/amendments")
+                        .header("Authorization", "Bearer " + rm1Token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /lcs/{id}/amendments: RM1 should be denied fetching amendments for Client B's LC")
+    void getAmendments_RM1_deniedForLcB() throws Exception {
+        mockMvc.perform(get("/lcs/" + lcB.getId() + "/amendments")
+                        .header("Authorization", "Bearer " + rm1Token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /lcs/{id}/drawings: RM1 should be denied fetching drawings for Client B's LC")
+    void getDrawings_RM1_deniedForLcB() throws Exception {
+        mockMvc.perform(get("/lcs/" + lcB.getId() + "/drawings")
+                        .header("Authorization", "Bearer " + rm1Token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /lcs/{id}/drawings: RM1 should be denied presenting drawing for Client B's LC")
+    void presentDrawing_RM1_deniedForLcB() throws Exception {
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("amount", "50000");
+        payload.put("documentsPresented", "Bill of Lading, Invoice");
+
+        mockMvc.perform(post("/lcs/" + lcB.getId() + "/drawings")
+                        .header("Authorization", "Bearer " + rm1Token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /bgs/{id}/claims: RM1 should be denied fetching claims for Client B's BG")
+    void getClaims_RM1_deniedForBgB() throws Exception {
+        mockMvc.perform(get("/bgs/" + bgB.getId() + "/claims")
+                        .header("Authorization", "Bearer " + rm1Token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /bgs/{id}/claims: RM1 should be denied filing claim for Client B's BG")
+    void fileClaim_RM1_deniedForBgB() throws Exception {
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("amount", "20000");
+        payload.put("paymentDetails", "Demand payment");
+
+        mockMvc.perform(post("/bgs/" + bgB.getId() + "/claims")
+                        .header("Authorization", "Bearer " + rm1Token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /bills: RM1 should be denied creating export bill for Client B")
+    void createBill_RM1_deniedForClientB() throws Exception {
+        ExportBill bill = new ExportBill();
+        bill.setBillNumber("EXP-UNAUTH-" + System.currentTimeMillis());
+        bill.setAmount(new BigDecimal("5000"));
+        bill.setCurrency("USD");
+        bill.setDraweeName("Overseas Drawee");
+
+        mockMvc.perform(post("/bills")
+                        .header("Authorization", "Bearer " + rm1Token)
+                        .param("clientId", clientB.getId().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(bill)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /bills/collections: RM1 should be denied creating collection instruction for Client B")
+    void createCollection_RM1_deniedForClientB() throws Exception {
+        CollectionInstruction instruction = new CollectionInstruction();
+        instruction.setInstructionRef("COL-UNAUTH-" + System.currentTimeMillis());
+        instruction.setAmount(new BigDecimal("5000"));
+        instruction.setCurrency("USD");
+        instruction.setDraweeName("Overseas Drawee");
+
+        mockMvc.perform(post("/bills/collections")
+                        .header("Authorization", "Bearer " + rm1Token)
+                        .param("clientId", clientB.getId().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(instruction)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /bills/client/{clientId}: RM1 should be denied getting export bills of Client B")
+    void getBillsByClientId_RM1_deniedForClientB() throws Exception {
+        mockMvc.perform(get("/bills/client/" + clientB.getId())
+                        .header("Authorization", "Bearer " + rm1Token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /bills/collections/client/{clientId}: RM1 should be denied getting collection instructions of Client B")
+    void getCollectionsByClientId_RM1_deniedForClientB() throws Exception {
+        mockMvc.perform(get("/bills/collections/client/" + clientB.getId())
+                        .header("Authorization", "Bearer " + rm1Token))
+                .andExpect(status().isForbidden());
     }
 }

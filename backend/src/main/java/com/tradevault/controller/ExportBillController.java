@@ -5,6 +5,7 @@ import com.tradevault.entity.CollectionInstruction;
 import com.tradevault.entity.ExportBill;
 import com.tradevault.entity.User;
 import com.tradevault.service.ExportBillService;
+import com.tradevault.security.TradeSecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,23 +31,7 @@ public class ExportBillController {
     private com.tradevault.repository.UserRepository userRepository;
 
     @Autowired
-    private com.tradevault.repository.CorporateClientRepository corporateClientRepository;
-
-    private void checkClientAccess(Long clientId, Principal principal) {
-        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
-        if ("CLIENT".equals(user.getRole())) {
-            if (user.getCorporateClient() == null || !user.getCorporateClient().getId().equals(clientId)) {
-                logger.warn("Client access denied: username='{}' attempted to access clientId={}", user.getUsername(), clientId);
-                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data");
-            }
-        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
-            com.tradevault.entity.CorporateClient client = corporateClientRepository.findById(clientId).orElseThrow();
-            if (client.getRelationshipManagerId() == null || !client.getRelationshipManagerId().equals(user.getId())) {
-                logger.warn("Client access denied: RM username='{}' attempted to access non-assigned clientId={}", user.getUsername(), clientId);
-                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data (not assigned to you)");
-            }
-        }
-    }
+    private TradeSecurityService tradeSecurityService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<ExportBill>>> getAllBills(Principal principal) {
@@ -72,7 +57,7 @@ public class ExportBillController {
     @GetMapping("/client/{clientId}")
     public ResponseEntity<ApiResponse<List<ExportBill>>> getBillsByClientId(@PathVariable Long clientId, Principal principal) {
         logger.debug("GetBillsByClientId clientId={} requested by username='{}'", clientId, principal.getName());
-        checkClientAccess(clientId, principal);
+        tradeSecurityService.checkClientAccess(clientId, principal);
         List<ExportBill> bills = billService.getBillsByClientId(clientId);
         logger.info("Retrieved {} Export Bills for clientId={}", bills.size(), clientId);
         return ResponseEntity.ok(ApiResponse.success("Export Bills fetched", bills));
@@ -84,7 +69,7 @@ public class ExportBillController {
             @RequestParam Long clientId,
             Principal principal) {
         logger.info("Export Bill create request: clientId={}, by username='{}'", clientId, principal.getName());
-        checkClientAccess(clientId, principal);
+        tradeSecurityService.checkClientAccess(clientId, principal);
         ExportBill created = billService.createBill(bill, clientId, principal.getName());
         logger.info("Export Bill created: billNumber='{}', by username='{}'", created.getBillNumber(), principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Export Bill initiated successfully", created));
@@ -129,7 +114,7 @@ public class ExportBillController {
     @GetMapping("/collections/client/{clientId}")
     public ResponseEntity<ApiResponse<List<CollectionInstruction>>> getCollectionsByClientId(@PathVariable Long clientId, Principal principal) {
         logger.debug("GetCollectionsByClientId clientId={} requested by username='{}'", clientId, principal.getName());
-        checkClientAccess(clientId, principal);
+        tradeSecurityService.checkClientAccess(clientId, principal);
         List<CollectionInstruction> instructions = billService.getInstructionsByClientId(clientId);
         logger.info("Retrieved {} Collection Instructions for clientId={}", instructions.size(), clientId);
         return ResponseEntity.ok(ApiResponse.success("Collection Instructions fetched", instructions));
@@ -141,7 +126,7 @@ public class ExportBillController {
             @RequestParam Long clientId,
             Principal principal) {
         logger.info("Collection Instruction create request: clientId={}, by username='{}'", clientId, principal.getName());
-        checkClientAccess(clientId, principal);
+        tradeSecurityService.checkClientAccess(clientId, principal);
         CollectionInstruction created = billService.createInstruction(instruction, clientId, principal.getName());
         logger.info("Collection Instruction created: instructionRef='{}', by username='{}'", created.getInstructionRef(), principal.getName());
         return ResponseEntity.ok(ApiResponse.success("Collection Instruction registered", created));
