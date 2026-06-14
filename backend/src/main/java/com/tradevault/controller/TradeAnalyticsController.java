@@ -33,6 +33,9 @@ public class TradeAnalyticsController {
             }
             return ResponseEntity.ok(ApiResponse.success("Analytics summary retrieved", 
                     analyticsService.getAnalyticsSummaryForClient(user.getCorporateClient().getId())));
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            return ResponseEntity.ok(ApiResponse.success("Analytics summary retrieved", 
+                    analyticsService.getAnalyticsSummaryForRelationshipManager(user.getId())));
         }
         return ResponseEntity.ok(ApiResponse.success("Analytics summary retrieved", analyticsService.getAnalyticsSummary()));
     }

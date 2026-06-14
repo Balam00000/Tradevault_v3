@@ -59,6 +59,13 @@ public class BankGuaranteeService {
         return bgs;
     }
 
+    public List<BankGuarantee> getBGsByRelationshipManagerId(Long rmId) {
+        logger.debug("Fetching Bank Guarantees for relationshipManagerId={}", rmId);
+        List<BankGuarantee> bgs = bgRepository.findByClientRelationshipManagerId(rmId);
+        logger.info("Retrieved {} Bank Guarantees for relationshipManagerId={}", bgs.size(), rmId);
+        return bgs;
+    }
+
     public BankGuarantee getBGById(Long id) {
         logger.debug("Fetching Bank Guarantee with id={}", id);
         return bgRepository.findById(id)

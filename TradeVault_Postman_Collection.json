@@ -1,0 +1,1160 @@
+{
+  "info": {
+    "_postman_id": "7d9c82bc-9d0d-4fa0-b184-efeaef259b67",
+    "name": "TradeVault API Collection",
+    "description": "Collection of all API endpoints for TradeVault, including Authentication, Corporate Client Management, Credit Facilities, Letters of Credit, Bank Guarantees, Export Bills, Compliance, and Analytics.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser_test\",\n  \"password\": \"password\",\n  \"email\": \"testuser@tradevault.com\",\n  \"fullName\": \"Test User\",\n  \"role\": \"CLIENT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+                  "    pm.test(\"Token saved to collection variables\", function () {",
+                  "        pm.expect(jsonData.data.token).to.not.be.undefined;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Authenticated User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Corporate Clients & Facilities",
+      "item": [
+        {
+          "name": "List Corporate Clients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/corporates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corporates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Client by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/corporates/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corporates",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Corporate Client",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Global Trading Co\",\n  \"country\": \"US\",\n  \"taxId\": \"TAX-US-12345\",\n  \"creditLimit\": 5000000.00,\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/corporates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corporates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Client (Assign RM)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Global Trading Co\",\n  \"relationshipManagerId\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/corporates/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corporates",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List All Credit Facilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/corporates/facilities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corporates",
+                "facilities"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Credit Facilities by Client ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/corporates/1/facilities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corporates",
+                "1",
+                "facilities"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Credit Facility",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"facilityType\": \"LETTER_OF_CREDIT_FACILITY\",\n  \"limitAmount\": 1500000.00,\n  \"currency\": \"USD\",\n  \"expiryDate\": \"2027-12-31\",\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/corporates/facilities?clientId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corporates",
+                "facilities"
+              ],
+              "query": [
+                {
+                  "key": "clientId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Credit Facility",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limitAmount\": 2000000.00,\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/corporates/facilities/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "corporates",
+                "facilities",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Letters of Credit (LC)",
+      "item": [
+        {
+          "name": "List Letters of Credit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lcs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get LC by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lcs/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create LC Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lcType\": \"SIGHT\",\n  \"amount\": 250000.00,\n  \"currency\": \"USD\",\n  \"applicantName\": \"Nexus Electronics Corp\",\n  \"beneficiaryName\": \"Shanghai Components Ltd\",\n  \"beneficiaryCountry\": \"CN\",\n  \"issueDate\": \"2026-06-14\",\n  \"expiryDate\": \"2026-12-14\",\n  \"tolerancePercentage\": 5.00,\n  \"portOfLoading\": \"Shanghai Port\",\n  \"portOfDischarge\": \"Los Angeles Port\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lcs?clientId=3&facilityId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs"
+              ],
+              "query": [
+                {
+                  "key": "clientId",
+                  "value": "3"
+                },
+                {
+                  "key": "facilityId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update LC Status (e.g. Submit, Approve, Reject)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_REVIEW\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lcs/1/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs",
+                "1",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List LC Amendments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lcs/1/amendments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs",
+                "1",
+                "amendments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Request LC Amendment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newAmount\": 300000.00,\n  \"newExpiryDate\": \"2027-02-14\",\n  \"justification\": \"Order quantity increased by buyer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lcs/1/amendments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs",
+                "1",
+                "amendments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Process LC Amendment (Approve/Reject)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lcs/amendments/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs",
+                "amendments",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List LC Drawings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/lcs/1/drawings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs",
+                "1",
+                "drawings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Present Documentary Drawing",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100000.00,\n  \"documentsPresented\": \"Bill of Lading, Commercial Invoice, Packing List\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lcs/1/drawings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs",
+                "1",
+                "drawings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Process Drawing (Pay/Resolve)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\",\n  \"discrepancyNotes\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/lcs/drawings/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "lcs",
+                "drawings",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bank Guarantees (BG)",
+      "item": [
+        {
+          "name": "List Bank Guarantees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bgs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bgs"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get BG by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bgs/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bgs",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create BG Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bgType\": \"PERFORMANCE_BOND\",\n  \"amount\": 80000.00,\n  \"currency\": \"USD\",\n  \"beneficiaryName\": \"National Power Grid Authority\",\n  \"issueDate\": \"2026-06-14\",\n  \"expiryDate\": \"2027-06-14\",\n  \"claimPeriodDays\": 30,\n  \"termsConditions\": \"Standard performance guarantee terms and conditions.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bgs?clientId=3&facilityId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bgs"
+              ],
+              "query": [
+                {
+                  "key": "clientId",
+                  "value": "3"
+                },
+                {
+                  "key": "facilityId",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit BG for Approval",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bgs/1/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bgs",
+                "1",
+                "submit"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve/Activate BG",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bgs/1/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bgs",
+                "1",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List BG Claims",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bgs/1/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bgs",
+                "1",
+                "claims"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "File BG Claim",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 80000.00,\n  \"paymentDetails\": \"Wire to central bank account #US-8877221\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bgs/1/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bgs",
+                "1",
+                "claims"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Process BG Claim (Approve/Reject)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bgs/claims/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bgs",
+                "claims",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Export Bills & Collections",
+      "item": [
+        {
+          "name": "List Export Bills",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Bills by Client ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bills/client/3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills",
+                "client",
+                "3"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Export Bill",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 120000.00,\n  \"currency\": \"USD\",\n  \"billType\": \"DocumentaryCollection\",\n  \"billDate\": \"2026-06-14\",\n  \"drawerName\": \"Nexus Electronics Corp\",\n  \"draweeName\": \"Euro Distribution Center\",\n  \"buyerCountry\": \"DE\",\n  \"maturityDate\": \"2026-09-14\",\n  \"collectionBank\": \"Deutsche Bank AG\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bills?clientId=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills"
+              ],
+              "query": [
+                {
+                  "key": "clientId",
+                  "value": "3"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Bill Status",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DOCUMENTS_SENT\",\n  \"trackingStatus\": \"SENT_TO_BANK\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bills/1/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills",
+                "1",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Collection Instructions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bills/collections",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills",
+                "collections"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Collections by Client ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bills/collections/client/3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills",
+                "collections",
+                "client",
+                "3"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Collection Instruction",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 90000.00,\n  \"currency\": \"USD\",\n  \"tenureType\": \"SIGHT\",\n  \"instructionType\": \"DP\",\n  \"draweeName\": \"Euro Distribution Center\",\n  \"instructionDate\": \"2026-06-14\",\n  \"instructionDetails\": \"Documents to be delivered against payment only.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bills/collections?clientId=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills",
+                "collections"
+              ],
+              "query": [
+                {
+                  "key": "clientId",
+                  "value": "3"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Collection Status",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COLLECTED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bills/collections/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bills",
+                "collections",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Compliance & Sanctions",
+      "item": [
+        {
+          "name": "List Sanctions Screenings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/compliance/screenings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "compliance",
+                "screenings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Compliance Cases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/compliance/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "compliance",
+                "cases"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Compliance Case",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED_CLEARED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/compliance/cases/1/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "compliance",
+                "cases",
+                "1",
+                "resolve"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Trade Analytics",
+      "item": [
+        {
+          "name": "Get Exposure & Limit Analytics Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "analytics",
+                "summary"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications & Logs",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/1/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "1",
+                "read"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List System Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit-logs"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List All Registered Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Relationship Managers Only",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/relationship-managers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "relationship-managers"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8300",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

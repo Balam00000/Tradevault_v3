@@ -65,6 +65,13 @@ public class LetterOfCreditService {
         return lcs;
     }
 
+    public List<LetterOfCredit> getLCsByRelationshipManagerId(Long rmId) {
+        logger.debug("Fetching Letters of Credit for relationshipManagerId={}", rmId);
+        List<LetterOfCredit> lcs = lcRepository.findByClientRelationshipManagerId(rmId);
+        logger.info("Retrieved {} Letters of Credit for relationshipManagerId={}", lcs.size(), rmId);
+        return lcs;
+    }
+
     public LetterOfCredit getLCById(Long id) {
         logger.debug("Fetching Letter of Credit with id={}", id);
         return lcRepository.findById(id)

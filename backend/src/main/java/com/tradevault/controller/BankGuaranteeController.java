@@ -30,12 +30,20 @@ public class BankGuaranteeController {
     @Autowired
     private com.tradevault.repository.UserRepository userRepository;
 
+    @Autowired
+    private com.tradevault.repository.CorporateClientRepository corporateClientRepository;
+
     private void checkBgAccess(BankGuarantee bg, Principal principal) {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null || !bg.getClient().getId().equals(user.getCorporateClient().getId())) {
                 logger.warn("BG access denied: username='{}' attempted to access bgId={}", user.getUsername(), bg.getId());
                 throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this Bank Guarantee");
+            }
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            if (bg.getClient().getRelationshipManagerId() == null || !bg.getClient().getRelationshipManagerId().equals(user.getId())) {
+                logger.warn("BG access denied: RM username='{}' attempted to access non-assigned bgId={}", user.getUsername(), bg.getId());
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this Bank Guarantee (not assigned to you)");
             }
         }
     }
@@ -46,6 +54,12 @@ public class BankGuaranteeController {
             if (user.getCorporateClient() == null || !user.getCorporateClient().getId().equals(clientId)) {
                 logger.warn("Client access denied: username='{}' attempted to access clientId={}", user.getUsername(), clientId);
                 throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data");
+            }
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            com.tradevault.entity.CorporateClient client = corporateClientRepository.findById(clientId).orElseThrow();
+            if (client.getRelationshipManagerId() == null || !client.getRelationshipManagerId().equals(user.getId())) {
+                logger.warn("Client access denied: RM username='{}' attempted to access non-assigned clientId={}", user.getUsername(), clientId);
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data (not assigned to you)");
             }
         }
     }
@@ -60,6 +74,10 @@ public class BankGuaranteeController {
             }
             List<BankGuarantee> bgs = bgService.getBGsByClientId(user.getCorporateClient().getId());
             logger.info("Returned {} BGs for CLIENT user='{}'", bgs.size(), user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("Bank Guarantees fetched successfully", bgs));
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            List<BankGuarantee> bgs = bgService.getBGsByRelationshipManagerId(user.getId());
+            logger.info("Returned {} BGs for RM user='{}'", bgs.size(), user.getUsername());
             return ResponseEntity.ok(ApiResponse.success("Bank Guarantees fetched successfully", bgs));
         }
         List<BankGuarantee> bgs = bgService.getAllBGs();

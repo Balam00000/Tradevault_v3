@@ -16,10 +16,10 @@ INSERT IGNORE INTO `users` (`username`, `password`, `email`, `full_name`, `role`
 ('admin', '$2a$10$8.UnVuG9HHgffUDAlk8GPuRGTwRKBt18aRjN.GJCp4e9.1z40.Ety', 'admin@tradevault.com', 'System Admin', 'ADMIN', 'ACTIVE');
 
 -- Insert Corporate Clients
-INSERT IGNORE INTO `corporate_clients` (`id`, `company_name`, `tax_id`, `country`, `status`, `credit_limit`, `registration_number`, `industry`, `kyc_status`) VALUES
-(1, 'Acme Industrial Holdings', 'TX-99887766', 'United States', 'ACTIVE', 50000000.00, 'REG-1001', 'Manufacturing', 'VERIFIED'),
-(2, 'Global Trading Logistics LLC', 'TX-55443322', 'United Kingdom', 'ACTIVE', 25000000.00, 'REG-1002', 'Logistics', 'VERIFIED'),
-(3, 'Nexus Electronics Corp', 'TX-11223344', 'Singapore', 'ACTIVE', 80000000.00, 'REG-1003', 'Electronics', 'VERIFIED');
+INSERT IGNORE INTO `corporate_clients` (`id`, `company_name`, `tax_id`, `country`, `status`, `credit_limit`, `registration_number`, `industry`, `kyc_status`, `relationship_manager_id`) VALUES
+(1, 'Acme Industrial Holdings', 'TX-99887766', 'United States', 'ACTIVE', 50000000.00, 'REG-1001', 'Manufacturing', 'VERIFIED', NULL),
+(2, 'Global Trading Logistics LLC', 'TX-55443322', 'United Kingdom', 'ACTIVE', 25000000.00, 'REG-1002', 'Logistics', 'VERIFIED', NULL),
+(3, 'Nexus Electronics Corp', 'TX-11223344', 'Singapore', 'ACTIVE', 80000000.00, 'REG-1003', 'Electronics', 'VERIFIED', 3);
 
 -- Insert Credit Facilities (Acme Industrial Holdings)
 INSERT IGNORE INTO `credit_facilities` (`id`, `client_id`, `facility_type`, `limit_amount`, `utilized_amount`, `currency`, `status`, `expiry_date`) VALUES

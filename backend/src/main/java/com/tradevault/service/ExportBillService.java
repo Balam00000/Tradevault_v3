@@ -54,6 +54,13 @@ public class ExportBillService {
         return bills;
     }
 
+    public List<ExportBill> getBillsByRelationshipManagerId(Long rmId) {
+        logger.debug("Fetching Export Bills for relationshipManagerId={}", rmId);
+        List<ExportBill> bills = billRepository.findByClientRelationshipManagerId(rmId);
+        logger.info("Retrieved {} Export Bills for relationshipManagerId={}", bills.size(), rmId);
+        return bills;
+    }
+
     public ExportBill getBillById(Long id) {
         logger.debug("Fetching Export Bill with id={}", id);
         return billRepository.findById(id)
@@ -147,6 +154,13 @@ public class ExportBillService {
         logger.debug("Fetching Collection Instructions for clientId={}", clientId);
         List<CollectionInstruction> instructions = instructionRepository.findByClientId(clientId);
         logger.info("Retrieved {} Collection Instructions for clientId={}", instructions.size(), clientId);
+        return instructions;
+    }
+
+    public List<CollectionInstruction> getInstructionsByRelationshipManagerId(Long rmId) {
+        logger.debug("Fetching Collection Instructions for relationshipManagerId={}", rmId);
+        List<CollectionInstruction> instructions = instructionRepository.findByClientRelationshipManagerId(rmId);
+        logger.info("Retrieved {} Collection Instructions for relationshipManagerId={}", instructions.size(), rmId);
         return instructions;
     }
 

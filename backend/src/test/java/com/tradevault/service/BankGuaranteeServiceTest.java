@@ -268,4 +268,13 @@ class BankGuaranteeServiceTest {
         assertThat(bg.getStatus()).isEqualTo(BankGuaranteeStatus.CLAIMED);
         assertThat(facility.getUtilizedAmount()).isEqualByComparingTo("0");
     }
+
+    @Test
+    @DisplayName("getBGsByRelationshipManagerId: should return BGs belonging to RM clients")
+    void getBGsByRelationshipManagerId_returnsBGs() {
+        when(bgRepository.findByClientRelationshipManagerId(101L)).thenReturn(List.of(new BankGuarantee(), new BankGuarantee()));
+        List<BankGuarantee> result = bgService.getBGsByRelationshipManagerId(101L);
+        assertThat(result).hasSize(2);
+        verify(bgRepository).findByClientRelationshipManagerId(101L);
+    }
 }

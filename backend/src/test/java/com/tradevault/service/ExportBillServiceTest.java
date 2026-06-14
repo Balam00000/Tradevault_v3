@@ -180,4 +180,22 @@ class ExportBillServiceTest {
         assertThat(result.getStatus()).isEqualTo(CollectionInstructionStatus.ACKNOWLEDGED_BY_BANK);
         verify(auditLogService).log(isNull(), eq("ops-user"), eq("COLLECTION_INSTRUCTION_UPDATE"), any(), isNull());
     }
+
+    @Test
+    @DisplayName("getBillsByRelationshipManagerId: should return bills belonging to RM clients")
+    void getBillsByRelationshipManagerId_returnsBills() {
+        when(billRepository.findByClientRelationshipManagerId(101L)).thenReturn(List.of(new ExportBill(), new ExportBill()));
+        List<ExportBill> result = billService.getBillsByRelationshipManagerId(101L);
+        assertThat(result).hasSize(2);
+        verify(billRepository).findByClientRelationshipManagerId(101L);
+    }
+
+    @Test
+    @DisplayName("getInstructionsByRelationshipManagerId: should return instructions belonging to RM clients")
+    void getInstructionsByRelationshipManagerId_returnsInstructions() {
+        when(instructionRepository.findByClientRelationshipManagerId(101L)).thenReturn(List.of(new CollectionInstruction(), new CollectionInstruction()));
+        List<CollectionInstruction> result = billService.getInstructionsByRelationshipManagerId(101L);
+        assertThat(result).hasSize(2);
+        verify(instructionRepository).findByClientRelationshipManagerId(101L);
+    }
 }

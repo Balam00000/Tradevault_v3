@@ -16,4 +16,5 @@ public interface LetterOfCreditRepository extends JpaRepository<LetterOfCredit, 
     Optional<LetterOfCredit> findByLcNumber(String lcNumber);
     List<LetterOfCredit> findAllByOrderByCreatedAtDesc();
     List<LetterOfCredit> findByStatusAndExpiryDateBefore(LetterOfCreditStatus status, LocalDate date);
+    List<LetterOfCredit> findByClientRelationshipManagerId(Long relationshipManagerId);
 }

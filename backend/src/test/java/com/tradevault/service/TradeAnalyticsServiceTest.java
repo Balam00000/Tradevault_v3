@@ -174,4 +174,31 @@ class TradeAnalyticsServiceTest {
         assertThat((Long) result.get("activeLcsCount")).isEqualTo(1L);
         assertThat((Long) result.get("activeBgsCount")).isEqualTo(1L);
     }
+
+    @Test
+    @DisplayName("getAnalyticsSummaryForRelationshipManager: should return relationship manager scoped data only")
+    void getAnalyticsSummaryForRelationshipManager_success() {
+        Long rmId = 101L;
+        when(lcRepository.findByClientRelationshipManagerId(rmId)).thenReturn(List.of(
+                buildLC("ACTIVE", new BigDecimal("200000"))
+        ));
+        when(bgRepository.findByClientRelationshipManagerId(rmId)).thenReturn(List.of(
+                buildBG("ACTIVE", new BigDecimal("100000"))
+        ));
+        when(billRepository.findByClientRelationshipManagerId(rmId)).thenReturn(List.of(
+                buildBill("DOCUMENTS_SENT", new BigDecimal("50000"))
+        ));
+        when(facilityRepository.findByClientRelationshipManagerId(rmId)).thenReturn(List.of(
+                buildFacility("ACTIVE", new BigDecimal("800000"), new BigDecimal("350000"))
+        ));
+
+        Map<String, Object> result = analyticsService.getAnalyticsSummaryForRelationshipManager(rmId);
+
+        assertThat((BigDecimal) result.get("lcExposure")).isEqualByComparingTo("200000");
+        assertThat((BigDecimal) result.get("bgExposure")).isEqualByComparingTo("100000");
+        assertThat((BigDecimal) result.get("billExposure")).isEqualByComparingTo("50000");
+        assertThat((BigDecimal) result.get("totalExposure")).isEqualByComparingTo("350000");
+        assertThat((Long) result.get("activeLcsCount")).isEqualTo(1L);
+        assertThat((Long) result.get("activeBgsCount")).isEqualTo(1L);
+    }
 }

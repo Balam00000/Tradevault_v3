@@ -12,4 +12,5 @@ public interface ExportBillRepository extends JpaRepository<ExportBill, Long> {
     List<ExportBill> findByClientId(Long clientId);
     Optional<ExportBill> findByBillNumber(String billNumber);
     List<ExportBill> findAllByOrderByCreatedAtDesc();
+    List<ExportBill> findByClientRelationshipManagerId(Long relationshipManagerId);
 }

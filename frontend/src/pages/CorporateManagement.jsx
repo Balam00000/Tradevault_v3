@@ -83,8 +83,9 @@ const CorporateManagement = () => {
 
   // Forms
   const [clientForm, setClientForm] = useState({
-    companyName: '', country: '', taxId: '', creditLimit: '', status: 'ACTIVE'
+    companyName: '', country: '', taxId: '', creditLimit: '', status: 'ACTIVE', relationshipManagerId: null
   });
+  const [relationshipManagers, setRelationshipManagers] = useState([]);
   const [facilityForm, setFacilityForm] = useState({
     facilityType: 'LETTER_OF_CREDIT_FACILITY', limitAmount: '',
     currency: 'USD', expiryDate: '', status: 'ACTIVE'
@@ -105,6 +106,17 @@ const CorporateManagement = () => {
     }
   };
 
+  const fetchRelationshipManagers = async () => {
+    try {
+      const res = await api.get('/users');
+      const allUsers = res.data.data || [];
+      const rms = allUsers.filter(u => u.role === 'RELATIONSHIP_MANAGER');
+      setRelationshipManagers(rms);
+    } catch (e) {
+      console.error("Failed to load users for RM assignment", e);
+    }
+  };
+
   const fetchFacilities = async (clientId) => {
     if (clientFacilities[clientId]) return; // already loaded
     try {
@@ -118,7 +130,10 @@ const CorporateManagement = () => {
     }
   };
 
-  useEffect(() => { fetchClients(); }, []);
+  useEffect(() => {
+    fetchClients();
+    fetchRelationshipManagers();
+  }, []);
 
   // ── Toggle client row ──
   const toggleExpand = (clientId) => {
@@ -133,7 +148,7 @@ const CorporateManagement = () => {
   // ── Client Modal ──
   const openCreateClient = () => {
     setEditClient(null);
-    setClientForm({ companyName: '', country: '', taxId: '', creditLimit: '', status: 'ACTIVE' });
+    setClientForm({ companyName: '', country: '', taxId: '', creditLimit: '', status: 'ACTIVE', relationshipManagerId: null });
     setFormError('');
     setShowClientModal(true);
   };
@@ -145,7 +160,8 @@ const CorporateManagement = () => {
       country: client.country || '',
       taxId: client.taxId || '',
       creditLimit: client.creditLimit || '',
-      status: client.status || 'ACTIVE'
+      status: client.status || 'ACTIVE',
+      relationshipManagerId: client.relationshipManagerId || null
     });
     setFormError('');
     setShowClientModal(true);
@@ -597,6 +613,21 @@ const CorporateManagement = () => {
                       {CLIENT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
+                </div>
+
+                {/* Assigned Relationship Manager */}
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Assigned Relationship Manager</label>
+                  <select
+                    value={clientForm.relationshipManagerId || ''}
+                    onChange={e => setClientForm(p => ({ ...p, relationshipManagerId: e.target.value ? Number(e.target.value) : null }))}
+                    className="w-full px-4 py-2.5 rounded-xl border dark:border-slate-800 border-slate-200 dark:bg-slate-950 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  >
+                    <option value="">-- Unassigned / Select RM --</option>
+                    {relationshipManagers.map(rm => (
+                      <option key={rm.id} value={rm.id}>{rm.fullName} ({rm.email})</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Error */}

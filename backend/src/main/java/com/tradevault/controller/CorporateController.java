@@ -57,6 +57,13 @@ public class CorporateController {
                 throw new org.springframework.security.access.AccessDeniedException(
                         "You do not have permission to access this client's data");
             }
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            CorporateClient client = clientRepository.findById(clientId).orElseThrow();
+            if (client.getRelationshipManagerId() == null || !client.getRelationshipManagerId().equals(user.getId())) {
+                logger.warn("Client access denied: RM username='{}' attempted to access non-assigned clientId={}", user.getUsername(), clientId);
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "You do not have permission to access this client's data (not assigned to you)");
+            }
         }
     }
 
@@ -74,6 +81,10 @@ public class CorporateController {
             }
             logger.debug("Returning own corporate client for user='{}'", user.getUsername());
             return ResponseEntity.ok(ApiResponse.success("Corporate clients fetched", List.of(user.getCorporateClient())));
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            List<CorporateClient> rms = clientRepository.findByRelationshipManagerId(user.getId());
+            logger.info("Relationship Manager user='{}' retrieved {} corporate clients", user.getUsername(), rms.size());
+            return ResponseEntity.ok(ApiResponse.success("Corporate clients fetched", rms));
         }
         List<CorporateClient> all = clientRepository.findAll();
         logger.info("Admin/staff user='{}' retrieved all {} corporate clients", user.getUsername(), all.size());
@@ -130,6 +141,7 @@ public class CorporateController {
             logger.info("Corporate client status change: clientId={}, from='{}' to='{}'", id, existing.getStatus(), patch.getStatus());
             existing.setStatus(patch.getStatus());
         }
+        existing.setRelationshipManagerId(patch.getRelationshipManagerId());
         CorporateClient updated = clientRepository.save(existing);
         logger.info("Corporate client updated: clientId={}, company='{}'", id, updated.getCompanyName());
         return ResponseEntity.ok(ApiResponse.success("Corporate client updated", updated));
@@ -149,6 +161,10 @@ public class CorporateController {
             List<CreditFacility> clientFacilities = facilityRepository.findByClientId(user.getCorporateClient().getId());
             logger.debug("Returning {} facilities for client user='{}'", clientFacilities.size(), user.getUsername());
             return ResponseEntity.ok(ApiResponse.success("Credit facilities fetched", clientFacilities));
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            List<CreditFacility> rmFacilities = facilityRepository.findByClientRelationshipManagerId(user.getId());
+            logger.info("Relationship Manager user='{}' retrieved {} credit facilities", user.getUsername(), rmFacilities.size());
+            return ResponseEntity.ok(ApiResponse.success("Credit facilities fetched", rmFacilities));
         }
         List<CreditFacility> all = facilityRepository.findAll();
         logger.info("Admin/staff user='{}' retrieved all {} credit facilities", user.getUsername(), all.size());

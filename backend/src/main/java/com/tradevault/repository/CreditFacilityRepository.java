@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface CreditFacilityRepository extends JpaRepository<CreditFacility, Long> {
     List<CreditFacility> findByClientId(Long clientId);
+    List<CreditFacility> findByClientRelationshipManagerId(Long relationshipManagerId);
 }

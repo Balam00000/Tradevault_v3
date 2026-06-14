@@ -180,4 +180,71 @@ public class TradeAnalyticsService {
                 clientId, totalExposure, utilizationRate);
         return summary;
     }
+
+    public Map<String, Object> getAnalyticsSummaryForRelationshipManager(Long rmId) {
+        logger.info("Generating analytics summary for relationshipManagerId={}", rmId);
+        Map<String, Object> summary = new HashMap<>();
+
+        List<LetterOfCredit> lcs = lcRepository.findByClientRelationshipManagerId(rmId);
+        List<BankGuarantee> bgs = bgRepository.findByClientRelationshipManagerId(rmId);
+        List<ExportBill> bills = billRepository.findByClientRelationshipManagerId(rmId);
+        List<CreditFacility> facilities = facilityRepository.findByClientRelationshipManagerId(rmId);
+        logger.debug("Relationship manager analytics data loaded for rmId={}: {} LCs, {} BGs, {} Bills, {} Facilities",
+                rmId, lcs.size(), bgs.size(), bills.size(), facilities.size());
+
+        // Active Exposure
+        BigDecimal lcExposure = lcs.stream()
+                .filter(lc -> lc.getStatus() == LetterOfCreditStatus.ACTIVE || lc.getStatus() == LetterOfCreditStatus.AMENDED)
+                .map(LetterOfCredit::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal bgExposure = bgs.stream()
+                .filter(bg -> bg.getStatus() == BankGuaranteeStatus.ACTIVE)
+                .map(BankGuarantee::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal billExposure = bills.stream()
+                .filter(bill -> bill.getStatus() == ExportBillStatus.DOCUMENTS_SENT || bill.getStatus() == ExportBillStatus.ACCEPTED)
+                .map(ExportBill::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalExposure = lcExposure.add(bgExposure).add(billExposure);
+
+        // Facility Limits & Utilisation
+        BigDecimal totalLimit = facilities.stream()
+                .filter(f -> f.getStatus() == CreditFacilityStatus.ACTIVE)
+                .map(CreditFacility::getLimitAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalUtilized = facilities.stream()
+                .filter(f -> f.getStatus() == CreditFacilityStatus.ACTIVE)
+                .map(CreditFacility::getUtilizedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal utilizationRate = totalLimit.compareTo(BigDecimal.ZERO) > 0
+                ? totalUtilized.multiply(new BigDecimal("100")).divide(totalLimit, 2, BigDecimal.ROUND_HALF_UP)
+                : BigDecimal.ZERO;
+
+        // Counts
+        long activeLcsCount = lcs.stream().filter(lc -> lc.getStatus() == LetterOfCreditStatus.ACTIVE).count();
+        long activeBgsCount = bgs.stream().filter(bg -> bg.getStatus() == BankGuaranteeStatus.ACTIVE).count();
+        long activeBillsCount = bills.stream().filter(bill -> bill.getStatus() != ExportBillStatus.PAID).count();
+
+        summary.put("totalExposure", totalExposure);
+        summary.put("lcExposure", lcExposure);
+        summary.put("bgExposure", bgExposure);
+        summary.put("billExposure", billExposure);
+        summary.put("totalLimit", totalLimit);
+        summary.put("totalUtilized", totalUtilized);
+        summary.put("utilizationRate", utilizationRate);
+        summary.put("activeLcsCount", activeLcsCount);
+        summary.put("activeBgsCount", activeBgsCount);
+        summary.put("activeBillsCount", activeBillsCount);
+        summary.put("totalScreenings", 0L);
+        summary.put("openComplianceCases", 0L);
+
+        logger.info("Relationship manager analytics summary generated for rmId={}: totalExposure={}, utilizationRate={}%",
+                rmId, totalExposure, utilizationRate);
+        return summary;
+    }
 }

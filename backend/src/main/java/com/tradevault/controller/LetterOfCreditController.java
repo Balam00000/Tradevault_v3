@@ -29,12 +29,20 @@ public class LetterOfCreditController {
     @Autowired
     private com.tradevault.repository.UserRepository userRepository;
 
+    @Autowired
+    private com.tradevault.repository.CorporateClientRepository corporateClientRepository;
+
     private void checkLcAccess(LetterOfCredit lc, Principal principal) {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null || !lc.getClient().getId().equals(user.getCorporateClient().getId())) {
                 logger.warn("LC access denied: username='{}' attempted to access lcId={}", user.getUsername(), lc.getId());
                 throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this Letter of Credit");
+            }
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            if (lc.getClient().getRelationshipManagerId() == null || !lc.getClient().getRelationshipManagerId().equals(user.getId())) {
+                logger.warn("LC access denied: RM username='{}' attempted to access non-assigned lcId={}", user.getUsername(), lc.getId());
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this Letter of Credit (not assigned to you)");
             }
         }
     }
@@ -45,6 +53,12 @@ public class LetterOfCreditController {
             if (user.getCorporateClient() == null || !user.getCorporateClient().getId().equals(clientId)) {
                 logger.warn("Client access denied: username='{}' attempted to access clientId={}", user.getUsername(), clientId);
                 throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data");
+            }
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            com.tradevault.entity.CorporateClient client = corporateClientRepository.findById(clientId).orElseThrow();
+            if (client.getRelationshipManagerId() == null || !client.getRelationshipManagerId().equals(user.getId())) {
+                logger.warn("Client access denied: RM username='{}' attempted to access non-assigned clientId={}", user.getUsername(), clientId);
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data (not assigned to you)");
             }
         }
     }
@@ -59,6 +73,10 @@ public class LetterOfCreditController {
             }
             List<LetterOfCredit> lcs = lcService.getLCsByClientId(user.getCorporateClient().getId());
             logger.info("Returned {} LCs for CLIENT user='{}'", lcs.size(), user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", lcs));
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            List<LetterOfCredit> lcs = lcService.getLCsByRelationshipManagerId(user.getId());
+            logger.info("Returned {} LCs for RM user='{}'", lcs.size(), user.getUsername());
             return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", lcs));
         }
         List<LetterOfCredit> lcs = lcService.getAllLCs();

@@ -12,4 +12,5 @@ public interface CollectionInstructionRepository extends JpaRepository<Collectio
     List<CollectionInstruction> findByClientId(Long clientId);
     Optional<CollectionInstruction> findByInstructionRef(String instructionRef);
     List<CollectionInstruction> findAllByOrderByCreatedAtDesc();
+    List<CollectionInstruction> findByClientRelationshipManagerId(Long relationshipManagerId);
 }

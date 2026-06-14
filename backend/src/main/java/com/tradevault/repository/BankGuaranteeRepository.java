@@ -16,4 +16,5 @@ public interface BankGuaranteeRepository extends JpaRepository<BankGuarantee, Lo
     Optional<BankGuarantee> findByBgNumber(String bgNumber);
     List<BankGuarantee> findAllByOrderByCreatedAtDesc();
     List<BankGuarantee> findByStatusAndExpiryDateBefore(BankGuaranteeStatus status, LocalDate date);
+    List<BankGuarantee> findByClientRelationshipManagerId(Long relationshipManagerId);
 }

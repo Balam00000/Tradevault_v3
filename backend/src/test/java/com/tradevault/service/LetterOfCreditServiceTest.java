@@ -347,4 +347,13 @@ class LetterOfCreditServiceTest {
         assertThat(lc.getStatus()).isEqualTo(LetterOfCreditStatus.DRAWN);
         verify(auditLogService).log(isNull(), eq("ops-user"), eq("LC_DRAWING_PAID"), any(), isNull());
     }
+
+    @Test
+    @DisplayName("getLCsByRelationshipManagerId: should return LCs belonging to RM clients")
+    void getLCsByRelationshipManagerId_returnsLCs() {
+        when(lcRepository.findByClientRelationshipManagerId(101L)).thenReturn(List.of(new LetterOfCredit(), new LetterOfCredit()));
+        List<LetterOfCredit> result = lcService.getLCsByRelationshipManagerId(101L);
+        assertThat(result).hasSize(2);
+        verify(lcRepository).findByClientRelationshipManagerId(101L);
+    }
 }

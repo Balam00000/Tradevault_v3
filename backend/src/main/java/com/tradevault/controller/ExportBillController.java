@@ -29,12 +29,21 @@ public class ExportBillController {
     @Autowired
     private com.tradevault.repository.UserRepository userRepository;
 
+    @Autowired
+    private com.tradevault.repository.CorporateClientRepository corporateClientRepository;
+
     private void checkClientAccess(Long clientId, Principal principal) {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null || !user.getCorporateClient().getId().equals(clientId)) {
                 logger.warn("Client access denied: username='{}' attempted to access clientId={}", user.getUsername(), clientId);
                 throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data");
+            }
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            com.tradevault.entity.CorporateClient client = corporateClientRepository.findById(clientId).orElseThrow();
+            if (client.getRelationshipManagerId() == null || !client.getRelationshipManagerId().equals(user.getId())) {
+                logger.warn("Client access denied: RM username='{}' attempted to access non-assigned clientId={}", user.getUsername(), clientId);
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this client's data (not assigned to you)");
             }
         }
     }
@@ -49,6 +58,10 @@ public class ExportBillController {
             }
             List<ExportBill> bills = billService.getBillsByClientId(user.getCorporateClient().getId());
             logger.info("Returned {} Export Bills for CLIENT user='{}'", bills.size(), user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("Export Bills fetched successfully", bills));
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            List<ExportBill> bills = billService.getBillsByRelationshipManagerId(user.getId());
+            logger.info("Returned {} Export Bills for RM user='{}'", bills.size(), user.getUsername());
             return ResponseEntity.ok(ApiResponse.success("Export Bills fetched successfully", bills));
         }
         List<ExportBill> bills = billService.getAllBills();
@@ -102,6 +115,10 @@ public class ExportBillController {
             }
             List<CollectionInstruction> instructions = billService.getInstructionsByClientId(user.getCorporateClient().getId());
             logger.info("Returned {} Collection Instructions for CLIENT user='{}'", instructions.size(), user.getUsername());
+            return ResponseEntity.ok(ApiResponse.success("Collection Instructions fetched", instructions));
+        } else if ("RELATIONSHIP_MANAGER".equals(user.getRole())) {
+            List<CollectionInstruction> instructions = billService.getInstructionsByRelationshipManagerId(user.getId());
+            logger.info("Returned {} Collection Instructions for RM user='{}'", instructions.size(), user.getUsername());
             return ResponseEntity.ok(ApiResponse.success("Collection Instructions fetched", instructions));
         }
         List<CollectionInstruction> all = billService.getAllInstructions();

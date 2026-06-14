@@ -213,4 +213,62 @@ class CorporateControllerTest {
                 .andExpect(jsonPath("$.data.facilityType").value("GUARANTEE_FACILITY"))
                 .andExpect(jsonPath("$.data.utilizedAmount").value(0));
     }
+
+    @Test
+    @DisplayName("GET /corporates: RELATIONSHIP_MANAGER should only see assigned clients")
+    void getAllClients_relationshipManager_returnsAssignedClientsOnly() throws Exception {
+        String rmToken = loginAs("rm_user_1", "RELATIONSHIP_MANAGER", "ACTIVE");
+        User rmUser = userRepository.findByUsername("rm_user_1").orElseThrow();
+
+        CorporateClient assignedClient = new CorporateClient();
+        assignedClient.setCompanyName("Assigned Corp");
+        assignedClient.setCountry("SG");
+        assignedClient.setTaxId("SG" + System.currentTimeMillis());
+        assignedClient.setCreditLimit(new BigDecimal("1000000"));
+        assignedClient.setStatus(CorporateClientStatus.ACTIVE);
+        assignedClient.setRelationshipManagerId(rmUser.getId());
+        assignedClient = clientRepository.save(assignedClient);
+
+        MvcResult result = mockMvc.perform(get("/corporates")
+                        .header("Authorization", "Bearer " + rmToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        assertThat(body).contains("Assigned Corp");
+        assertThat(body).doesNotContain("Test Corp Ltd");
+    }
+
+    @Test
+    @DisplayName("GET /corporates/{id}: RELATIONSHIP_MANAGER should be denied for non-assigned client")
+    void getClientById_relationshipManager_deniedForNonAssigned() throws Exception {
+        String rmToken = loginAs("rm_user_2", "RELATIONSHIP_MANAGER", "ACTIVE");
+
+        mockMvc.perform(get("/corporates/" + seededClient.getId())
+                        .header("Authorization", "Bearer " + rmToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("PUT /corporates/{id}: ADMIN should successfully update relationshipManagerId")
+    void updateClient_adminUser_canAssignRelationshipManager() throws Exception {
+        User rmUser = new User("rm_user_3", passwordEncoder.encode("password"), "rm3@test.com", "RM 3", "RELATIONSHIP_MANAGER");
+        rmUser.setStatus(UserStatus.ACTIVE);
+        rmUser = userRepository.save(rmUser);
+
+        CorporateClient patch = new CorporateClient();
+        patch.setRelationshipManagerId(rmUser.getId());
+
+        mockMvc.perform(put("/corporates/" + seededClient.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(patch)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.relationshipManagerId").value(rmUser.getId().intValue()));
+
+        CorporateClient updated = clientRepository.findById(seededClient.getId()).orElseThrow();
+        assertThat(updated.getRelationshipManagerId()).isEqualTo(rmUser.getId());
+    }
 }
