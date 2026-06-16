@@ -13,7 +13,7 @@ public interface LetterOfCreditService {
     List<LetterOfCredit> getLCsByRelationshipManagerId(Long rmId);
     LetterOfCredit getLCById(Long id);
     LetterOfCredit createLC(LetterOfCredit lc, Long clientId, Long facilityId, String username);
-    LetterOfCredit updateStatus(Long id, String status, String username);
+    LetterOfCredit updateStatus(Long id, com.tradevault.entity.enums.LetterOfCreditStatus status, String username);
     LCAmendment requestAmendment(Long lcId, BigDecimal newAmount, LocalDate newExpiryDate, String justification, String username);
     LCAmendment processAmendment(Long amendmentId, String status, String username);
     LCDrawing presentDrawing(Long lcId, BigDecimal amount, String documents, String username);

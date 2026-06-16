@@ -6,6 +6,7 @@ import com.tradevault.service.LetterOfCreditService;
 import com.tradevault.security.TradeSecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.tradevault.entity.enums.LetterOfCreditStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -104,13 +105,14 @@ public class LetterOfCreditController {
                 logger.warn("CLIENT user='{}' attempted invalid status '{}' on lcId={}", user.getUsername(), status, id);
                 throw new com.tradevault.exception.BadRequestException("Corporate clients are only allowed to submit Letters of Credit for review (IN_REVIEW status)");
             }
-            if (!"DRAFT".equals(lc.getStatus())) {
+            if (lc.getStatus() != LetterOfCreditStatus.DRAFT) {
                 logger.warn("CLIENT user='{}' attempted to submit non-DRAFT LC: lcId={}, currentStatus='{}'", user.getUsername(), id, lc.getStatus());
                 throw new com.tradevault.exception.BadRequestException("Only DRAFT Letters of Credit can be submitted for review");
             }
         }
 
-        LetterOfCredit updated = lcService.updateStatus(id, status, principal.getName());
+        LetterOfCreditStatus targetStatus = LetterOfCreditStatus.valueOf(status.toUpperCase());
+        LetterOfCredit updated = lcService.updateStatus(id, targetStatus, principal.getName());
         logger.info("LC status updated to '{}': lcNumber='{}'", status, updated.getLcNumber());
         return ResponseEntity.ok(ApiResponse.success("Letter of Credit status updated to: " + status, updated));
     }

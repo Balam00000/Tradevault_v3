@@ -3,202 +3,151 @@ package com.tradevault.service;
 import com.tradevault.entity.*;
 import com.tradevault.entity.enums.*;
 import com.tradevault.repository.*;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for {@link TradeAnalyticsService}.
- */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("TradeAnalyticsService Unit Tests")
-class TradeAnalyticsServiceTest {
+public class TradeAnalyticsServiceTest {
 
-    @Mock private LetterOfCreditRepository lcRepository;
-    @Mock private BankGuaranteeRepository bgRepository;
-    @Mock private ExportBillRepository billRepository;
-    @Mock private CreditFacilityRepository facilityRepository;
-    @Mock private SanctionsScreeningRepository screeningRepository;
-    @Mock private ComplianceCaseRepository caseRepository;
+    @Mock
+    private LetterOfCreditRepository lcRepository;
+
+    @Mock
+    private BankGuaranteeRepository bgRepository;
+
+    @Mock
+    private ExportBillRepository billRepository;
+
+    @Mock
+    private CreditFacilityRepository facilityRepository;
+
+    @Mock
+    private SanctionsScreeningRepository screeningRepository;
+
+    @Mock
+    private ComplianceCaseRepository caseRepository;
 
     @InjectMocks
     private TradeAnalyticsServiceImpl analyticsService;
 
-    // ─── Fixture helpers ──────────────────────────────────────────────────────
+    private LetterOfCredit activeLc;
+    private LetterOfCredit draftLc;
+    private BankGuarantee activeBg;
+    private BankGuarantee draftBg;
+    private ExportBill sentBill;
+    private ExportBill paidBill;
+    private CreditFacility activeFacility;
 
-    private LetterOfCredit buildLC(String status, BigDecimal amount) {
-        LetterOfCredit lc = new LetterOfCredit();
-        lc.setStatus(status != null ? LetterOfCreditStatus.valueOf(status.toUpperCase()) : null);
-        lc.setAmount(amount);
-        return lc;
-    }
+    @BeforeEach
+    void setUp() {
+        activeLc = new LetterOfCredit();
+        activeLc.setAmount(new BigDecimal("150000.00"));
+        activeLc.setStatus(LetterOfCreditStatus.ACTIVE);
 
-    private BankGuarantee buildBG(String status, BigDecimal amount) {
-        BankGuarantee bg = new BankGuarantee();
-        bg.setStatus(status != null ? BankGuaranteeStatus.valueOf(status.toUpperCase()) : null);
-        bg.setAmount(amount);
-        return bg;
-    }
+        draftLc = new LetterOfCredit();
+        draftLc.setAmount(new BigDecimal("50000.00"));
+        draftLc.setStatus(LetterOfCreditStatus.DRAFT);
 
-    private ExportBill buildBill(String status, BigDecimal amount) {
-        ExportBill bill = new ExportBill();
-        bill.setStatus(status != null ? ExportBillStatus.valueOf(status.toUpperCase()) : null);
-        bill.setAmount(amount);
-        return bill;
-    }
+        activeBg = new BankGuarantee();
+        activeBg.setAmount(new BigDecimal("200000.00"));
+        activeBg.setStatus(BankGuaranteeStatus.ACTIVE);
 
-    private CreditFacility buildFacility(String status, BigDecimal limit, BigDecimal utilized) {
-        CreditFacility f = new CreditFacility();
-        f.setStatus(status != null ? CreditFacilityStatus.valueOf(status.toUpperCase()) : null);
-        f.setLimitAmount(limit);
-        f.setUtilizedAmount(utilized);
-        return f;
-    }
+        draftBg = new BankGuarantee();
+        draftBg.setAmount(new BigDecimal("80000.00"));
+        draftBg.setStatus(BankGuaranteeStatus.DRAFT);
 
-    // ─── getAnalyticsSummary ──────────────────────────────────────────────────
+        sentBill = new ExportBill();
+        sentBill.setAmount(new BigDecimal("100000.00"));
+        sentBill.setStatus(ExportBillStatus.DOCUMENTS_SENT);
 
-    @Test
-    @DisplayName("getAnalyticsSummary: should return all-zero summary when no data exists")
-    void getAnalyticsSummary_emptyData_returnsZeros() {
-        when(lcRepository.findAll()).thenReturn(List.of());
-        when(bgRepository.findAll()).thenReturn(List.of());
-        when(billRepository.findAll()).thenReturn(List.of());
-        when(facilityRepository.findAll()).thenReturn(List.of());
-        when(screeningRepository.count()).thenReturn(0L);
-        when(caseRepository.countByCaseStatus(ComplianceCaseStatus.OPEN)).thenReturn(0L);
+        paidBill = new ExportBill();
+        paidBill.setAmount(new BigDecimal("70000.00"));
+        paidBill.setStatus(ExportBillStatus.PAID);
 
-        Map<String, Object> result = analyticsService.getAnalyticsSummary();
-
-        assertThat(result).isNotNull();
-        assertThat((BigDecimal) result.get("totalExposure")).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat((BigDecimal) result.get("utilizationRate")).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat((Long) result.get("activeLcsCount")).isEqualTo(0L);
-        assertThat((Long) result.get("activeBgsCount")).isEqualTo(0L);
+        activeFacility = new CreditFacility();
+        activeFacility.setLimitAmount(new BigDecimal("1000000.00"));
+        activeFacility.setUtilizedAmount(new BigDecimal("450000.00"));
+        activeFacility.setStatus(CreditFacilityStatus.ACTIVE);
     }
 
     @Test
-    @DisplayName("getAnalyticsSummary: should calculate correct exposure for active LCs")
-    void getAnalyticsSummary_withActiveLCs() {
-        when(lcRepository.findAll()).thenReturn(List.of(
-                buildLC("ACTIVE", new BigDecimal("500000")),
-                buildLC("ACTIVE", new BigDecimal("300000")),
-                buildLC("DRAFT",  new BigDecimal("200000"))  // draft — should not count
-        ));
-        when(bgRepository.findAll()).thenReturn(List.of());
-        when(billRepository.findAll()).thenReturn(List.of());
-        when(facilityRepository.findAll()).thenReturn(List.of(
-                buildFacility("ACTIVE", new BigDecimal("2000000"), new BigDecimal("800000"))
-        ));
-        when(screeningRepository.count()).thenReturn(5L);
-        when(caseRepository.countByCaseStatus(ComplianceCaseStatus.OPEN)).thenReturn(2L);
+    void getAnalyticsSummary_success() {
+        // Mocking findAll and counts
+        when(lcRepository.findAll()).thenReturn(Arrays.asList(activeLc, draftLc));
+        when(bgRepository.findAll()).thenReturn(Arrays.asList(activeBg, draftBg));
+        when(billRepository.findAll()).thenReturn(Arrays.asList(sentBill, paidBill));
+        when(facilityRepository.findAll()).thenReturn(Collections.singletonList(activeFacility));
+        when(screeningRepository.count()).thenReturn(15L);
+        when(caseRepository.countByCaseStatus(ComplianceCaseStatus.OPEN)).thenReturn(3L);
 
-        Map<String, Object> result = analyticsService.getAnalyticsSummary();
+        Map<String, Object> summary = analyticsService.getAnalyticsSummary();
 
-        assertThat((BigDecimal) result.get("lcExposure")).isEqualByComparingTo("800000");
-        assertThat((BigDecimal) result.get("bgExposure")).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat((BigDecimal) result.get("totalExposure")).isEqualByComparingTo("800000");
-        assertThat((Long) result.get("activeLcsCount")).isEqualTo(2L);
-        assertThat((Long) result.get("totalScreenings")).isEqualTo(5L);
-        assertThat((Long) result.get("openComplianceCases")).isEqualTo(2L);
+        assertNotNull(summary);
+        // LC exposure (150,000) + BG exposure (200,000) + Bill exposure (100,000) = 450,000
+        assertEquals(new BigDecimal("450000.00"), summary.get("totalExposure"));
+        assertEquals(new BigDecimal("150000.00"), summary.get("lcExposure"));
+        assertEquals(new BigDecimal("200000.00"), summary.get("bgExposure"));
+        assertEquals(new BigDecimal("100000.00"), summary.get("billExposure"));
+        assertEquals(new BigDecimal("1000000.00"), summary.get("totalLimit"));
+        assertEquals(new BigDecimal("450000.00"), summary.get("totalUtilized"));
+        assertEquals(new BigDecimal("45.00"), summary.get("utilizationRate"));
+        assertEquals(1L, summary.get("activeLcsCount"));
+        assertEquals(1L, summary.get("activeBgsCount"));
+        assertEquals(1L, summary.get("activeBillsCount")); // paid is excluded from count (since status != PAID is active)
+        assertEquals(15L, summary.get("totalScreenings"));
+        assertEquals(3L, summary.get("openComplianceCases"));
     }
 
     @Test
-    @DisplayName("getAnalyticsSummary: should calculate utilization rate correctly")
-    void getAnalyticsSummary_utilizationRateCalculation() {
-        when(lcRepository.findAll()).thenReturn(List.of());
-        when(bgRepository.findAll()).thenReturn(List.of());
-        when(billRepository.findAll()).thenReturn(List.of());
-        when(facilityRepository.findAll()).thenReturn(List.of(
-                buildFacility("ACTIVE", new BigDecimal("1000000"), new BigDecimal("250000"))
-        ));
-        when(screeningRepository.count()).thenReturn(0L);
-        when(caseRepository.countByCaseStatus(ComplianceCaseStatus.OPEN)).thenReturn(0L);
-
-        Map<String, Object> result = analyticsService.getAnalyticsSummary();
-
-        // 250000 / 1000000 * 100 = 25.00
-        assertThat((BigDecimal) result.get("utilizationRate")).isEqualByComparingTo("25.00");
-    }
-
-    @Test
-    @DisplayName("getAnalyticsSummary: should only count ACTIVE facility limits")
-    void getAnalyticsSummary_onlyCountsActiveFacilities() {
-        when(lcRepository.findAll()).thenReturn(List.of());
-        when(bgRepository.findAll()).thenReturn(List.of());
-        when(billRepository.findAll()).thenReturn(List.of());
-        when(facilityRepository.findAll()).thenReturn(List.of(
-                buildFacility("ACTIVE",  new BigDecimal("1000000"), new BigDecimal("100000")),
-                buildFacility("EXPIRED", new BigDecimal("500000"),  new BigDecimal("500000")) // should be excluded
-        ));
-        when(screeningRepository.count()).thenReturn(0L);
-        when(caseRepository.countByCaseStatus(ComplianceCaseStatus.OPEN)).thenReturn(0L);
-
-        Map<String, Object> result = analyticsService.getAnalyticsSummary();
-
-        assertThat((BigDecimal) result.get("totalLimit")).isEqualByComparingTo("1000000");
-        assertThat((BigDecimal) result.get("totalUtilized")).isEqualByComparingTo("100000");
-    }
-
-    // ─── getAnalyticsSummaryForClient ─────────────────────────────────────────
-
-    @Test
-    @DisplayName("getAnalyticsSummaryForClient: should return client-scoped data only")
     void getAnalyticsSummaryForClient_success() {
-        Long clientId = 42L;
-        when(lcRepository.findByClientId(clientId)).thenReturn(List.of(
-                buildLC("ACTIVE", new BigDecimal("100000"))
-        ));
-        when(bgRepository.findByClientId(clientId)).thenReturn(List.of(
-                buildBG("ACTIVE", new BigDecimal("50000"))
-        ));
-        when(billRepository.findByClientId(clientId)).thenReturn(List.of(
-                buildBill("DOCUMENTS_SENT", new BigDecimal("30000"))
-        ));
-        when(facilityRepository.findByClientId(clientId)).thenReturn(List.of(
-                buildFacility("ACTIVE", new BigDecimal("500000"), new BigDecimal("180000"))
-        ));
+        Long clientId = 1L;
+        when(lcRepository.findByClientId(clientId)).thenReturn(Arrays.asList(activeLc, draftLc));
+        when(bgRepository.findByClientId(clientId)).thenReturn(Arrays.asList(activeBg, draftBg));
+        when(billRepository.findByClientId(clientId)).thenReturn(Arrays.asList(sentBill, paidBill));
+        when(facilityRepository.findByClientId(clientId)).thenReturn(Collections.singletonList(activeFacility));
 
-        Map<String, Object> result = analyticsService.getAnalyticsSummaryForClient(clientId);
+        Map<String, Object> summary = analyticsService.getAnalyticsSummaryForClient(clientId);
 
-        assertThat((BigDecimal) result.get("lcExposure")).isEqualByComparingTo("100000");
-        assertThat((BigDecimal) result.get("bgExposure")).isEqualByComparingTo("50000");
-        assertThat((BigDecimal) result.get("billExposure")).isEqualByComparingTo("30000");
-        assertThat((BigDecimal) result.get("totalExposure")).isEqualByComparingTo("180000");
-        assertThat((Long) result.get("activeLcsCount")).isEqualTo(1L);
-        assertThat((Long) result.get("activeBgsCount")).isEqualTo(1L);
+        assertNotNull(summary);
+        assertEquals(new BigDecimal("450000.00"), summary.get("totalExposure"));
+        assertEquals(new BigDecimal("45.00"), summary.get("utilizationRate"));
+        assertEquals(1L, summary.get("activeLcsCount"));
+        assertEquals(1L, summary.get("activeBgsCount"));
+        assertEquals(1L, summary.get("activeBillsCount"));
+        assertEquals(0L, summary.get("totalScreenings"));
+        assertEquals(0L, summary.get("openComplianceCases"));
     }
 
     @Test
-    @DisplayName("getAnalyticsSummaryForRelationshipManager: should return relationship manager scoped data only")
     void getAnalyticsSummaryForRelationshipManager_success() {
-        Long rmId = 101L;
-        when(lcRepository.findByClientRelationshipManagerId(rmId)).thenReturn(List.of(
-                buildLC("ACTIVE", new BigDecimal("200000"))
-        ));
-        when(bgRepository.findByClientRelationshipManagerId(rmId)).thenReturn(List.of(
-                buildBG("ACTIVE", new BigDecimal("100000"))
-        ));
-        when(billRepository.findByClientRelationshipManagerId(rmId)).thenReturn(List.of(
-                buildBill("DOCUMENTS_SENT", new BigDecimal("50000"))
-        ));
-        when(facilityRepository.findByClientRelationshipManagerId(rmId)).thenReturn(List.of(
-                buildFacility("ACTIVE", new BigDecimal("800000"), new BigDecimal("350000"))
-        ));
+        Long rmId = 2L;
+        when(lcRepository.findByClientRelationshipManagerId(rmId)).thenReturn(Arrays.asList(activeLc, draftLc));
+        when(bgRepository.findByClientRelationshipManagerId(rmId)).thenReturn(Arrays.asList(activeBg, draftBg));
+        when(billRepository.findByClientRelationshipManagerId(rmId)).thenReturn(Arrays.asList(sentBill, paidBill));
+        when(facilityRepository.findByClientRelationshipManagerId(rmId)).thenReturn(Collections.singletonList(activeFacility));
 
-        Map<String, Object> result = analyticsService.getAnalyticsSummaryForRelationshipManager(rmId);
+        Map<String, Object> summary = analyticsService.getAnalyticsSummaryForRelationshipManager(rmId);
 
-        assertThat((BigDecimal) result.get("lcExposure")).isEqualByComparingTo("200000");
-        assertThat((BigDecimal) result.get("bgExposure")).isEqualByComparingTo("100000");
-        assertThat((BigDecimal) result.get("billExposure")).isEqualByComparingTo("50000");
-        assertThat((BigDecimal) result.get("totalExposure")).isEqualByComparingTo("350000");
-        assertThat((Long) result.get("activeLcsCount")).isEqualTo(1L);
-        assertThat((Long) result.get("activeBgsCount")).isEqualTo(1L);
+        assertNotNull(summary);
+        assertEquals(new BigDecimal("450000.00"), summary.get("totalExposure"));
+        assertEquals(new BigDecimal("45.00"), summary.get("utilizationRate"));
+        assertEquals(1L, summary.get("activeLcsCount"));
+        assertEquals(1L, summary.get("activeBgsCount"));
+        assertEquals(1L, summary.get("activeBillsCount"));
+        assertEquals(0L, summary.get("totalScreenings"));
+        assertEquals(0L, summary.get("openComplianceCases"));
     }
 }

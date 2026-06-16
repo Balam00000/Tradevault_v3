@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.tradevault.entity.enums.ExportBillStatus;
+import com.tradevault.entity.enums.CollectionInstructionStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -84,7 +86,8 @@ public class ExportBillController {
         String status = payload.get("status");
         String trackingStatus = payload.get("trackingStatus");
         logger.info("Export Bill status update: billId={}, targetStatus='{}', by username='{}'", id, status, principal.getName());
-        ExportBill updated = billService.updateBillStatus(id, status, trackingStatus, principal.getName());
+        ExportBillStatus statusEnum = ExportBillStatus.valueOf(status.toUpperCase());
+        ExportBill updated = billService.updateBillStatus(id, statusEnum, trackingStatus, principal.getName());
         logger.info("Export Bill status updated to '{}': billNumber='{}'", status, updated.getBillNumber());
         return ResponseEntity.ok(ApiResponse.success("Export Bill status updated", updated));
     }
@@ -140,7 +143,8 @@ public class ExportBillController {
             Principal principal) {
         String status = payload.get("status");
         logger.info("Collection Instruction status update: id={}, targetStatus='{}', by username='{}'", id, status, principal.getName());
-        CollectionInstruction updated = billService.updateInstructionStatus(id, status, principal.getName());
+        CollectionInstructionStatus statusEnum = CollectionInstructionStatus.valueOf(status.toUpperCase());
+        CollectionInstruction updated = billService.updateInstructionStatus(id, statusEnum, principal.getName());
         logger.info("Collection Instruction status updated to '{}': instructionRef='{}'", status, updated.getInstructionRef());
         return ResponseEntity.ok(ApiResponse.success("Collection Instruction status updated", updated));
     }

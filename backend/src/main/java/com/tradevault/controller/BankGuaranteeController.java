@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.tradevault.entity.enums.BankGuaranteeStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -106,7 +107,8 @@ public class BankGuaranteeController {
         logger.info("BG status update: bgId={}, targetStatus='{}', by username='{}'", id, status, principal.getName());
         BankGuarantee bg = bgService.getBGById(id);
         tradeSecurityService.checkBgAccess(bg, principal);
-        BankGuarantee updated = bgService.updateStatus(id, status, principal.getName());
+        BankGuaranteeStatus statusEnum = BankGuaranteeStatus.valueOf(status.toUpperCase());
+        BankGuarantee updated = bgService.updateStatus(id, statusEnum, principal.getName());
         logger.info("BG status updated to '{}': bgNumber='{}'", status, updated.getBgNumber());
         return ResponseEntity.ok(ApiResponse.success("Bank Guarantee status updated to: " + status, updated));
     }

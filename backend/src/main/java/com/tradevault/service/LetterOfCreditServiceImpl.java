@@ -140,11 +140,10 @@ public class LetterOfCreditServiceImpl implements LetterOfCreditService {
     // ─── Status Update ────────────────────────────────────────────────────────
 
     @Transactional
-    public LetterOfCredit updateStatus(Long id, String status, String username) {
+    public LetterOfCredit updateStatus(Long id, LetterOfCreditStatus status, String username) {
         logger.info("LC status update requested by user='{}': lcId={}, targetStatus='{}'", username, id, status);
         LetterOfCredit lc = getLCById(id);
         LetterOfCreditStatus oldStatus = lc.getStatus();
-        LetterOfCreditStatus statusEnum = LetterOfCreditStatus.valueOf(status.toUpperCase());
 
         // COMPLIANCE HOLD check
         boolean hasComplianceHold = !sanctionsScreeningRepository
@@ -159,10 +158,10 @@ public class LetterOfCreditServiceImpl implements LetterOfCreditService {
                     "A Compliance Manager must clear or block this entity before status can be advanced.");
         }
 
-        lc.setStatus(statusEnum);
+        lc.setStatus(status);
 
         // Facility utilization on ACTIVE transition
-        if (statusEnum == LetterOfCreditStatus.ACTIVE && oldStatus != LetterOfCreditStatus.ACTIVE && oldStatus != LetterOfCreditStatus.AMENDED) {
+        if (status == LetterOfCreditStatus.ACTIVE && oldStatus != LetterOfCreditStatus.ACTIVE && oldStatus != LetterOfCreditStatus.AMENDED) {
             logger.info("LC transitioning to ACTIVE — blocking facility limit. lcNumber='{}', amount={}", lc.getLcNumber(), lc.getAmount());
             CreditFacility facility = lc.getCreditFacility();
             BigDecimal available = facility.getLimitAmount().subtract(facility.getUtilizedAmount());
@@ -187,9 +186,9 @@ public class LetterOfCreditServiceImpl implements LetterOfCreditService {
 
         LetterOfCredit updated = lcRepository.save(lc);
         logger.info("LC status updated: lcNumber='{}', from='{}' to='{}', by user='{}'",
-                lc.getLcNumber(), oldStatus, statusEnum, username);
+                lc.getLcNumber(), oldStatus, status, username);
         auditLogService.log(null, username, "LC_STATUS_UPDATE",
-                "Updated LC status: " + lc.getLcNumber() + " from " + oldStatus + " to " + statusEnum, null);
+                "Updated LC status: " + lc.getLcNumber() + " from " + oldStatus + " to " + status, null);
 
         return updated;
     }

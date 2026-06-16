@@ -107,7 +107,7 @@ public class ExportBillServiceImpl implements ExportBillService {
     // ─── Update Bill Status ───────────────────────────────────────────────────
 
     @Transactional
-    public ExportBill updateBillStatus(Long id, String status, String trackingStatus, String username) {
+    public ExportBill updateBillStatus(Long id, ExportBillStatus status, String trackingStatus, String username) {
         logger.info("Export Bill status update requested by user='{}': billId={}, targetStatus='{}'", username, id, status);
         ExportBill bill = getBillById(id);
 
@@ -125,8 +125,7 @@ public class ExportBillServiceImpl implements ExportBillService {
         }
 
         ExportBillStatus oldStatus = bill.getStatus();
-        ExportBillStatus statusEnum = ExportBillStatus.valueOf(status.toUpperCase());
-        bill.setStatus(statusEnum);
+        bill.setStatus(status);
         if (trackingStatus != null) {
             bill.setTrackingStatus(trackingStatus);
             logger.debug("Export Bill tracking status updated to '{}' for billNumber='{}'", trackingStatus, bill.getBillNumber());
@@ -134,9 +133,9 @@ public class ExportBillServiceImpl implements ExportBillService {
 
         ExportBill saved = billRepository.save(bill);
         logger.info("Export Bill status updated: billNumber='{}', from='{}' to='{}', by user='{}'",
-                bill.getBillNumber(), oldStatus, statusEnum, username);
+                bill.getBillNumber(), oldStatus, status, username);
         auditLogService.log(null, username, "EXPORT_BILL_STATUS_UPDATE",
-                "Updated export bill " + bill.getBillNumber() + " status to: " + statusEnum, null);
+                "Updated export bill " + bill.getBillNumber() + " status to: " + status, null);
 
         return saved;
     }
@@ -200,7 +199,7 @@ public class ExportBillServiceImpl implements ExportBillService {
     // ─── Update Collection Instruction Status ─────────────────────────────────
 
     @Transactional
-    public CollectionInstruction updateInstructionStatus(Long id, String status, String username) {
+    public CollectionInstruction updateInstructionStatus(Long id, CollectionInstructionStatus status, String username) {
         logger.info("Collection Instruction status update requested by user='{}': instructionId={}, targetStatus='{}'", username, id, status);
         CollectionInstruction instruction = instructionRepository.findById(id)
                 .orElseThrow(() -> {
@@ -222,14 +221,13 @@ public class ExportBillServiceImpl implements ExportBillService {
         }
 
         CollectionInstructionStatus oldStatus = instruction.getStatus();
-        CollectionInstructionStatus statusEnum = CollectionInstructionStatus.valueOf(status.toUpperCase());
-        instruction.setStatus(statusEnum);
+        instruction.setStatus(status);
 
         CollectionInstruction saved = instructionRepository.save(instruction);
         logger.info("Collection Instruction status updated: instructionRef='{}', from='{}' to='{}', by user='{}'",
-                instruction.getInstructionRef(), oldStatus, statusEnum, username);
+                instruction.getInstructionRef(), oldStatus, status, username);
         auditLogService.log(null, username, "COLLECTION_INSTRUCTION_UPDATE",
-                "Updated collection instruction " + instruction.getInstructionRef() + " status to: " + statusEnum, null);
+                "Updated collection instruction " + instruction.getInstructionRef() + " status to: " + status, null);
 
         return saved;
     }

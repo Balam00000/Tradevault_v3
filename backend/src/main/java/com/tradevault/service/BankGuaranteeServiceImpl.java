@@ -133,11 +133,10 @@ public class BankGuaranteeServiceImpl implements BankGuaranteeService {
     // ─── Status Update ────────────────────────────────────────────────────────
 
     @Transactional
-    public BankGuarantee updateStatus(Long id, String statusStr, String username) {
-        logger.info("BG status update requested by user='{}': bgId={}, targetStatus='{}'", username, id, statusStr);
+    public BankGuarantee updateStatus(Long id, BankGuaranteeStatus status, String username) {
+        logger.info("BG status update requested by user='{}': bgId={}, targetStatus='{}'", username, id, status);
         BankGuarantee bg = getBGById(id);
         BankGuaranteeStatus oldStatus = bg.getStatus();
-        BankGuaranteeStatus status = BankGuaranteeStatus.valueOf(statusStr.toUpperCase());
 
         // COMPLIANCE HOLD check
         boolean hasComplianceHold = !sanctionsScreeningRepository
