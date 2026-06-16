@@ -3,12 +3,15 @@ package com.tradevault.controller;
 import com.tradevault.dto.ApiResponse;
 import com.tradevault.entity.Notification;
 import com.tradevault.entity.User;
+import com.tradevault.entity.enums.NotificationStatus;
 import com.tradevault.repository.NotificationRepository;
+import com.tradevault.repository.UserRepository;
 import com.tradevault.security.TradeSecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -25,13 +28,14 @@ public class NotificationController {
     private NotificationRepository notificationRepository;
 
     @Autowired
-    private com.tradevault.repository.UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
     private TradeSecurityService tradeSecurityService;
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<Notification>>> getNotifications(@PathVariable Long userId, Principal principal) {
+    public ResponseEntity<ApiResponse<List<Notification>>> getNotifications(@PathVariable Long userId,
+            Principal principal) {
         logger.debug("GetNotifications for userId={} requested by username='{}'", userId, principal.getName());
         tradeSecurityService.verifyUserAccess(userId, principal);
         List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
@@ -40,10 +44,12 @@ public class NotificationController {
     }
 
     @GetMapping("/user/{userId}/unread")
-    public ResponseEntity<ApiResponse<List<Notification>>> getUnreadNotifications(@PathVariable Long userId, Principal principal) {
+    public ResponseEntity<ApiResponse<List<Notification>>> getUnreadNotifications(@PathVariable Long userId,
+            Principal principal) {
         logger.debug("GetUnreadNotifications for userId={} requested by username='{}'", userId, principal.getName());
         tradeSecurityService.verifyUserAccess(userId, principal);
-        List<Notification> notifications = notificationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, com.tradevault.entity.enums.NotificationStatus.UNREAD);
+        List<Notification> notifications = notificationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId,
+                NotificationStatus.UNREAD);
         logger.info("Retrieved {} unread notifications for userId={}", notifications.size(), userId);
         return ResponseEntity.ok(ApiResponse.success("Unread notifications fetched", notifications));
     }
@@ -56,7 +62,7 @@ public class NotificationController {
         if (!notification.getUserId().equals(user.getId())) {
             logger.warn("Mark-as-read denied: username='{}' attempted to update notificationId={} owned by userId={}",
                     user.getUsername(), id, notification.getUserId());
-            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to modify this notification");
+            throw new AccessDeniedException("You do not have permission to modify this notification");
         }
         notification.setIsRead(true);
         notificationRepository.save(notification);
