@@ -6,6 +6,7 @@ public enum ScreeningEntityType {
     COUNTERPARTY,
     APPLICANT,
     DRAWER,
+    DRAWEE,
     BANK,
     Client,
     Beneficiary,
