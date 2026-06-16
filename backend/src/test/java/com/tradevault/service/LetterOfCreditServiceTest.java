@@ -111,7 +111,7 @@ public class LetterOfCreditServiceTest {
     void updateStatus_complianceHold() {
         // Mock a flagged screening entry to simulate compliance hold
         when(lcRepository.findById(10L)).thenReturn(Optional.of(lc));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("LC-12345", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("LC-12345", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.singletonList(new SanctionsScreening()));
 
         assertThrows(IllegalStateException.class, () -> lcService.updateStatus(10L, LetterOfCreditStatus.ACTIVE, "testuser"));
@@ -120,7 +120,7 @@ public class LetterOfCreditServiceTest {
     @Test
     void updateStatus_activeSuccess() {
         when(lcRepository.findById(10L)).thenReturn(Optional.of(lc));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("LC-12345", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("LC-12345", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.emptyList());
         when(lcRepository.save(any(LetterOfCredit.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

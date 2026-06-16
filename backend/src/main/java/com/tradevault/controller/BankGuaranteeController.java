@@ -8,11 +8,13 @@ import com.tradevault.service.BankGuaranteeService;
 import com.tradevault.security.TradeSecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.tradevault.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.tradevault.entity.enums.BankGuaranteeStatus;
 import org.springframework.web.bind.annotation.*;
+import java.util.Collections;
 
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -30,7 +32,7 @@ public class BankGuaranteeController {
     private BankGuaranteeService bgService;
 
     @Autowired
-    private com.tradevault.repository.UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
     private TradeSecurityService tradeSecurityService;
@@ -41,7 +43,7 @@ public class BankGuaranteeController {
         logger.debug("GetAllBGs requested by username='{}', role='{}'", user.getUsername(), user.getRole());
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null) {
-                return ResponseEntity.ok(ApiResponse.success("Bank Guarantees fetched successfully", java.util.Collections.emptyList()));
+                return ResponseEntity.ok(ApiResponse.success("Bank Guarantees fetched successfully", Collections.emptyList()));
             }
             List<BankGuarantee> bgs = bgService.getBGsByClientId(user.getCorporateClient().getId());
             logger.info("Returned {} BGs for CLIENT user='{}'", bgs.size(), user.getUsername());

@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import com.tradevault.security.TradeSecurityService;
 
@@ -48,7 +49,7 @@ public class CorporateController {
         User u = resolveUser(principal);
         if (!"ADMIN".equals(u.getRole())) {
             logger.warn("Unauthorized admin action attempted by username='{}', role='{}'", u.getUsername(), u.getRole());
-            throw new org.springframework.security.access.AccessDeniedException(
+            throw new AccessDeniedException(
                     "Only administrators can perform this action");
         }
     }

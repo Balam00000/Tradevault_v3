@@ -7,6 +7,10 @@ import com.tradevault.security.TradeSecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.tradevault.entity.enums.LetterOfCreditStatus;
+import com.tradevault.repository.UserRepository;
+import com.tradevault.repository.LCAmendmentRepository;
+import com.tradevault.exception.BadRequestException;
+import com.tradevault.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -29,10 +34,10 @@ public class LetterOfCreditController {
     private LetterOfCreditService lcService;
 
     @Autowired
-    private com.tradevault.repository.UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    private com.tradevault.repository.LCAmendmentRepository amendmentRepository;
+    private LCAmendmentRepository amendmentRepository;
 
     @Autowired
     private TradeSecurityService tradeSecurityService;
@@ -43,7 +48,7 @@ public class LetterOfCreditController {
         logger.debug("GetAllLCs requested by username='{}', role='{}'", user.getUsername(), user.getRole());
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null) {
-                return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", java.util.Collections.emptyList()));
+                return ResponseEntity.ok(ApiResponse.success("Letters of Credit fetched successfully", Collections.emptyList()));
             }
             List<LetterOfCredit> lcs = lcService.getLCsByClientId(user.getCorporateClient().getId());
             logger.info("Returned {} LCs for CLIENT user='{}'", lcs.size(), user.getUsername());
@@ -103,11 +108,11 @@ public class LetterOfCreditController {
         if ("CLIENT".equals(user.getRole())) {
             if (!"IN_REVIEW".equals(status)) {
                 logger.warn("CLIENT user='{}' attempted invalid status '{}' on lcId={}", user.getUsername(), status, id);
-                throw new com.tradevault.exception.BadRequestException("Corporate clients are only allowed to submit Letters of Credit for review (IN_REVIEW status)");
+                throw new BadRequestException("Corporate clients are only allowed to submit Letters of Credit for review (IN_REVIEW status)");
             }
             if (lc.getStatus() != LetterOfCreditStatus.DRAFT) {
                 logger.warn("CLIENT user='{}' attempted to submit non-DRAFT LC: lcId={}, currentStatus='{}'", user.getUsername(), id, lc.getStatus());
-                throw new com.tradevault.exception.BadRequestException("Only DRAFT Letters of Credit can be submitted for review");
+                throw new BadRequestException("Only DRAFT Letters of Credit can be submitted for review");
             }
         }
 
@@ -154,7 +159,7 @@ public class LetterOfCreditController {
         String status = payload.get("status");
         logger.info("Processing LC amendment: amendmentId={}, targetStatus='{}', by username='{}'", amendmentId, status, principal.getName());
         LCAmendment amendment = amendmentRepository.findById(amendmentId)
-                .orElseThrow(() -> new com.tradevault.exception.ResourceNotFoundException("Amendment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Amendment not found"));
         tradeSecurityService.checkLcAccess(amendment.getLc(), principal);
         LCAmendment processed = lcService.processAmendment(amendmentId, status, principal.getName());
         logger.info("LC amendment processed to status='{}': amendmentId={}", status, amendmentId);

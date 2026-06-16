@@ -4,6 +4,7 @@ import com.tradevault.entity.*;
 import com.tradevault.entity.enums.BankGuaranteeStatus;
 import com.tradevault.entity.enums.BGClaimStatus;
 import com.tradevault.entity.enums.BGType;
+import com.tradevault.entity.enums.SanctionsScreeningStatus;
 import com.tradevault.exception.BadRequestException;
 import com.tradevault.exception.ResourceNotFoundException;
 import com.tradevault.repository.*;
@@ -140,7 +141,7 @@ public class BankGuaranteeServiceImpl implements BankGuaranteeService {
 
         // COMPLIANCE HOLD check
         boolean hasComplianceHold = !sanctionsScreeningRepository
-                .findByTransactionIdAndStatus(bg.getBgNumber(), "FLAGGED").isEmpty();
+                .findByTransactionIdAndStatus(bg.getBgNumber(), SanctionsScreeningStatus.FLAGGED).isEmpty();
         if (hasComplianceHold) {
             logger.warn("COMPLIANCE HOLD: Status update blocked for BG='{}', user='{}'. Unresolved FLAGGED screening exists.",
                      bg.getBgNumber(), username);

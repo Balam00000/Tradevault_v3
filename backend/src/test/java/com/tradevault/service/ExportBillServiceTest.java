@@ -89,7 +89,7 @@ public class ExportBillServiceTest {
     @Test
     void updateBillStatus_complianceHold() {
         when(billRepository.findById(10L)).thenReturn(Optional.of(bill));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("EXP-BILL-100", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("EXP-BILL-100", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.singletonList(new SanctionsScreening()));
 
         assertThrows(IllegalStateException.class, () -> billService.updateBillStatus(10L, ExportBillStatus.ACCEPTED, "DOCS_ACCEPTED", "testuser"));
@@ -98,7 +98,7 @@ public class ExportBillServiceTest {
     @Test
     void updateBillStatus_success() {
         when(billRepository.findById(10L)).thenReturn(Optional.of(bill));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("EXP-BILL-100", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("EXP-BILL-100", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.emptyList());
         when(billRepository.save(any(ExportBill.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -125,7 +125,7 @@ public class ExportBillServiceTest {
     @Test
     void updateInstructionStatus_complianceHold() {
         when(instructionRepository.findById(20L)).thenReturn(Optional.of(instruction));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("COL-INST-200", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("COL-INST-200", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.singletonList(new SanctionsScreening()));
 
         assertThrows(IllegalStateException.class, () -> billService.updateInstructionStatus(20L, CollectionInstructionStatus.SETTLED, "testuser"));
@@ -134,7 +134,7 @@ public class ExportBillServiceTest {
     @Test
     void updateInstructionStatus_success() {
         when(instructionRepository.findById(20L)).thenReturn(Optional.of(instruction));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("COL-INST-200", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("COL-INST-200", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.emptyList());
         when(instructionRepository.save(any(CollectionInstruction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

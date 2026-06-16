@@ -5,6 +5,7 @@ import com.tradevault.entity.enums.ExportBillStatus;
 import com.tradevault.entity.enums.ExportBillType;
 import com.tradevault.entity.enums.CollectionInstructionStatus;
 import com.tradevault.entity.enums.CollectionInstructionType;
+import com.tradevault.entity.enums.SanctionsScreeningStatus;
 import com.tradevault.exception.ResourceNotFoundException;
 import com.tradevault.repository.*;
 import org.slf4j.Logger;
@@ -113,7 +114,7 @@ public class ExportBillServiceImpl implements ExportBillService {
 
         // COMPLIANCE HOLD check
         boolean hasComplianceHold = !sanctionsScreeningRepository
-                .findByTransactionIdAndStatus(bill.getBillNumber(), "FLAGGED").isEmpty();
+                .findByTransactionIdAndStatus(bill.getBillNumber(), SanctionsScreeningStatus.FLAGGED).isEmpty();
         if (hasComplianceHold) {
             logger.warn("COMPLIANCE HOLD: Status update blocked for bill='{}', user='{}'. Unresolved FLAGGED screening exists.",
                     bill.getBillNumber(), username);
@@ -209,7 +210,7 @@ public class ExportBillServiceImpl implements ExportBillService {
 
         // COMPLIANCE HOLD check
         boolean hasComplianceHold = !sanctionsScreeningRepository
-                .findByTransactionIdAndStatus(instruction.getInstructionRef(), "FLAGGED").isEmpty();
+                .findByTransactionIdAndStatus(instruction.getInstructionRef(), SanctionsScreeningStatus.FLAGGED).isEmpty();
         if (hasComplianceHold) {
             logger.warn("COMPLIANCE HOLD: Status update blocked for collection='{}', user='{}'. Unresolved FLAGGED screening exists.",
                     instruction.getInstructionRef(), username);

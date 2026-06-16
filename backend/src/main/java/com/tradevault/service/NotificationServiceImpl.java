@@ -1,6 +1,7 @@
 package com.tradevault.service;
 
 import com.tradevault.entity.Notification;
+import com.tradevault.entity.enums.NotificationStatus;
 import com.tradevault.repository.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +80,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     public List<Notification> getUnreadNotifications(Long userId) {
         logger.debug("Fetching unread notifications for userId={}", userId);
-        List<Notification> notifications = notificationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, com.tradevault.entity.enums.NotificationStatus.UNREAD);
+        List<Notification> notifications = notificationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, NotificationStatus.UNREAD);
         logger.debug("Retrieved {} unread notifications for userId={}", notifications.size(), userId);
         return notifications;
     }

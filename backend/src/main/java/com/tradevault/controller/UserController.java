@@ -4,6 +4,8 @@ import com.tradevault.dto.ApiResponse;
 import com.tradevault.dto.UserUpdateRequest;
 import com.tradevault.entity.CorporateClient;
 import com.tradevault.entity.User;
+import com.tradevault.entity.enums.UserStatus;
+import com.tradevault.exception.ResourceNotFoundException;
 import com.tradevault.repository.CorporateClientRepository;
 import com.tradevault.repository.UserRepository;
 import com.tradevault.service.AuditLogService;
@@ -51,7 +53,7 @@ public class UserController {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.warn("User not found for update: userId={}", id);
-                    return new com.tradevault.exception.ResourceNotFoundException("User not found with id: " + id);
+                    return new ResourceNotFoundException("User not found with id: " + id);
                 });
 
         logger.debug("Updating user fields: username='{}', newRole='{}', newStatus='{}'",
@@ -60,13 +62,13 @@ public class UserController {
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
         user.setRole(request.getRole());
-        user.setStatus(request.getStatus() != null ? com.tradevault.entity.enums.UserStatus.valueOf(request.getStatus().toUpperCase()) : null);
+        user.setStatus(request.getStatus() != null ? UserStatus.valueOf(request.getStatus().toUpperCase()) : null);
 
         if (request.getCorporateClientId() != null) {
             CorporateClient client = corporateClientRepository.findById(request.getCorporateClientId())
                     .orElseThrow(() -> {
                         logger.warn("Corporate Client not found for user association: clientId={}", request.getCorporateClientId());
-                        return new com.tradevault.exception.ResourceNotFoundException("Corporate Client not found");
+                        return new ResourceNotFoundException("Corporate Client not found");
                     });
             user.setCorporateClient(client);
             logger.debug("User '{}' linked to corporateClientId={}", user.getUsername(), client.getId());
@@ -90,7 +92,7 @@ public class UserController {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.warn("User not found for deletion: userId={}", id);
-                    return new com.tradevault.exception.ResourceNotFoundException("User not found with id: " + id);
+                    return new ResourceNotFoundException("User not found with id: " + id);
                 });
 
         String username = user.getUsername();

@@ -4,6 +4,7 @@ import com.tradevault.entity.*;
 import com.tradevault.entity.enums.LetterOfCreditStatus;
 import com.tradevault.entity.enums.LCAmendmentStatus;
 import com.tradevault.entity.enums.LCDrawingStatus;
+import com.tradevault.entity.enums.SanctionsScreeningStatus;
 import com.tradevault.exception.BadRequestException;
 import com.tradevault.exception.ResourceNotFoundException;
 import com.tradevault.repository.*;
@@ -147,7 +148,7 @@ public class LetterOfCreditServiceImpl implements LetterOfCreditService {
 
         // COMPLIANCE HOLD check
         boolean hasComplianceHold = !sanctionsScreeningRepository
-                .findByTransactionIdAndStatus(lc.getLcNumber(), "FLAGGED").isEmpty();
+                .findByTransactionIdAndStatus(lc.getLcNumber(), SanctionsScreeningStatus.FLAGGED).isEmpty();
         if (hasComplianceHold) {
             logger.warn("COMPLIANCE HOLD: Status update blocked for LC='{}', user='{}'. Unresolved FLAGGED screening exists.",
                     lc.getLcNumber(), username);

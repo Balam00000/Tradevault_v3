@@ -2,6 +2,8 @@ package com.tradevault.service;
 
 import com.tradevault.entity.ExportBill;
 import com.tradevault.entity.CollectionInstruction;
+import com.tradevault.entity.enums.ExportBillStatus;
+import com.tradevault.entity.enums.CollectionInstructionStatus;
 import java.util.List;
 
 public interface ExportBillService {
@@ -10,11 +12,11 @@ public interface ExportBillService {
     List<ExportBill> getBillsByRelationshipManagerId(Long rmId);
     ExportBill getBillById(Long id);
     ExportBill createBill(ExportBill bill, Long clientId, String username);
-    ExportBill updateBillStatus(Long id, com.tradevault.entity.enums.ExportBillStatus status, String trackingStatus, String username);
+    ExportBill updateBillStatus(Long id, ExportBillStatus status, String trackingStatus, String username);
     
     List<CollectionInstruction> getAllInstructions();
     List<CollectionInstruction> getInstructionsByClientId(Long clientId);
     List<CollectionInstruction> getInstructionsByRelationshipManagerId(Long rmId);
     CollectionInstruction createInstruction(CollectionInstruction instruction, Long clientId, String username);
-    CollectionInstruction updateInstructionStatus(Long id, com.tradevault.entity.enums.CollectionInstructionStatus status, String username);
+    CollectionInstruction updateInstructionStatus(Long id, CollectionInstructionStatus status, String username);
 }

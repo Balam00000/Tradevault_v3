@@ -8,12 +8,14 @@ import com.tradevault.service.ExportBillService;
 import com.tradevault.security.TradeSecurityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.tradevault.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.tradevault.entity.enums.ExportBillStatus;
 import com.tradevault.entity.enums.CollectionInstructionStatus;
 import org.springframework.web.bind.annotation.*;
+import java.util.Collections;
 
 import java.security.Principal;
 import java.util.List;
@@ -30,7 +32,7 @@ public class ExportBillController {
     private ExportBillService billService;
 
     @Autowired
-    private com.tradevault.repository.UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
     private TradeSecurityService tradeSecurityService;
@@ -41,7 +43,7 @@ public class ExportBillController {
         logger.debug("GetAllBills requested by username='{}', role='{}'", user.getUsername(), user.getRole());
         if ("CLIENT".equals(user.getRole())) {
             if (user.getCorporateClient() == null) {
-                return ResponseEntity.ok(ApiResponse.success("Export Bills fetched successfully", java.util.Collections.emptyList()));
+                return ResponseEntity.ok(ApiResponse.success("Export Bills fetched successfully", Collections.emptyList()));
             }
             List<ExportBill> bills = billService.getBillsByClientId(user.getCorporateClient().getId());
             logger.info("Returned {} Export Bills for CLIENT user='{}'", bills.size(), user.getUsername());

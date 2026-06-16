@@ -100,7 +100,7 @@ public class BankGuaranteeServiceTest {
     @Test
     void updateStatus_complianceHold() {
         when(bgRepository.findById(10L)).thenReturn(Optional.of(bg));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("BG-12345", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("BG-12345", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.singletonList(new SanctionsScreening()));
 
         assertThrows(IllegalStateException.class, () -> bgService.updateStatus(10L, BankGuaranteeStatus.ACTIVE, "testuser"));
@@ -109,7 +109,7 @@ public class BankGuaranteeServiceTest {
     @Test
     void updateStatus_activeSuccess() {
         when(bgRepository.findById(10L)).thenReturn(Optional.of(bg));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("BG-12345", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("BG-12345", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.emptyList());
         when(bgRepository.save(any(BankGuarantee.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -122,10 +122,10 @@ public class BankGuaranteeServiceTest {
     }
 
     @Test
-    void updateStatus_releasedRefund() {
+    void updateStatus_releasedLimitRefund() {
         bg.setStatus(BankGuaranteeStatus.ACTIVE);
         when(bgRepository.findById(10L)).thenReturn(Optional.of(bg));
-        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("BG-12345", "FLAGGED"))
+        when(sanctionsScreeningRepository.findByTransactionIdAndStatus("BG-12345", SanctionsScreeningStatus.FLAGGED))
                 .thenReturn(Collections.emptyList());
         when(bgRepository.save(any(BankGuarantee.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
