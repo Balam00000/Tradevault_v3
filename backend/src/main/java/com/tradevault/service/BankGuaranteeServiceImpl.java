@@ -10,39 +10,49 @@ import com.tradevault.exception.ResourceNotFoundException;
 import com.tradevault.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class BankGuaranteeServiceImpl implements BankGuaranteeService {
 
     private static final Logger logger = LoggerFactory.getLogger(BankGuaranteeServiceImpl.class);
 
-    @Autowired
-    private BankGuaranteeRepository bgRepository;
+    private final BankGuaranteeRepository bgRepository;
+    private final CreditFacilityRepository facilityRepository;
+    private final CorporateClientRepository clientRepository;
+    private final BGClaimRepository claimRepository;
+    private final AuditLogService auditLogService;
+    private final SanctionsScreeningService sanctionsScreeningService;
+    private final SanctionsScreeningRepository sanctionsScreeningRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    @Autowired
-    private CreditFacilityRepository facilityRepository;
-
-    @Autowired
-    private CorporateClientRepository clientRepository;
-
-    @Autowired
-    private BGClaimRepository claimRepository;
-
-    @Autowired
-    private AuditLogService auditLogService;
-
-    @Autowired
-    private SanctionsScreeningService sanctionsScreeningService;
-
-    @Autowired
-    private SanctionsScreeningRepository sanctionsScreeningRepository;
+    public BankGuaranteeServiceImpl(
+            BankGuaranteeRepository bgRepository,
+            CreditFacilityRepository facilityRepository,
+            CorporateClientRepository clientRepository,
+            BGClaimRepository claimRepository,
+            AuditLogService auditLogService,
+            SanctionsScreeningService sanctionsScreeningService,
+            SanctionsScreeningRepository sanctionsScreeningRepository,
+            UserRepository userRepository,
+            NotificationService notificationService) {
+        this.bgRepository = bgRepository;
+        this.facilityRepository = facilityRepository;
+        this.clientRepository = clientRepository;
+        this.claimRepository = claimRepository;
+        this.auditLogService = auditLogService;
+        this.sanctionsScreeningService = sanctionsScreeningService;
+        this.sanctionsScreeningRepository = sanctionsScreeningRepository;
+        this.userRepository = userRepository;
+        this.notificationService = notificationService;
+    }
 
     // ─── Read Operations ─────────────────────────────────────────────────────
 
@@ -167,7 +177,6 @@ public class BankGuaranteeServiceImpl implements BankGuaranteeService {
             facilityRepository.save(facility);
             logger.info("Facility limit updated for BG activation: facilityId={}, newUtilized={}", facility.getId(), facility.getUtilizedAmount());
         } else if (status == BankGuaranteeStatus.RELEASED && oldStatus == BankGuaranteeStatus.ACTIVE) {
-            // Refund utilized limit
             logger.info("BG released — refunding facility limit. bgNumber='{}', amount={}", bg.getBgNumber(), bg.getAmount());
             CreditFacility facility = bg.getCreditFacility();
             BigDecimal refundAmount = bg.getAmount().min(facility.getUtilizedAmount());
@@ -181,6 +190,33 @@ public class BankGuaranteeServiceImpl implements BankGuaranteeService {
                  bg.getBgNumber(), oldStatus, status, username);
         auditLogService.log(null, username, "BG_STATUS_UPDATE",
                  "Updated BG status: " + bg.getBgNumber() + " from " + oldStatus + " to " + status, null);
+
+        try {
+            if (status == BankGuaranteeStatus.ACTIVE) {
+                notificationService.sendNotification(
+                        bg.getClient().getId(),
+                        "Bank Guarantee Active",
+                        "Your Bank Guarantee " + bg.getBgNumber() + " is now ACTIVE.",
+                        "BANK_GUARANTEE"
+                );
+            } else if (status == BankGuaranteeStatus.RELEASED) {
+                notificationService.sendNotification(
+                        bg.getClient().getId(),
+                        "Bank Guarantee Released",
+                        "Your Bank Guarantee " + bg.getBgNumber() + " has been released.",
+                        "BANK_GUARANTEE"
+                );
+            } else {
+                notificationService.sendNotification(
+                        bg.getClient().getId(),
+                        "Bank Guarantee Status Updated",
+                        "Your Bank Guarantee " + bg.getBgNumber() + " status has been updated from " + oldStatus + " to " + status + ".",
+                        "BANK_GUARANTEE"
+                );
+            }
+        } catch (Exception e) {
+            logger.error("Failed to send BG status notification for bgId={}: {}", bg.getId(), e.getMessage(), e);
+        }
 
         return updated;
     }
@@ -201,6 +237,20 @@ public class BankGuaranteeServiceImpl implements BankGuaranteeService {
         logger.info("BG submitted for approval: bgNumber='{}', status changed to PENDING_APPROVAL", bg.getBgNumber());
         auditLogService.log(null, username, "BG_SUBMITTED_FOR_APPROVAL",
                 "Client submitted BG for Operations review: " + bg.getBgNumber(), null);
+
+        try {
+            List<User> opsUsers = userRepository.findByRole("OPERATIONS");
+            List<Long> opsUserIds = opsUsers.stream().map(User::getId).collect(Collectors.toList());
+            notificationService.broadcastNotification(
+                    opsUserIds,
+                    "BG Approval Required",
+                    "Bank Guarantee " + bg.getBgNumber() + " has been submitted for approval by " + username + ".",
+                    "APPROVAL"
+            );
+        } catch (Exception e) {
+            logger.error("Failed to send BG submission notification for bgId={}: {}", bg.getId(), e.getMessage(), e);
+        }
+
         return updated;
     }
 
@@ -221,6 +271,20 @@ public class BankGuaranteeServiceImpl implements BankGuaranteeService {
 
         BGClaim saved = claimRepository.save(claim);
         logger.info("BG claim created: claimRef='{}', bgNumber='{}', amount={}", saved.getClaimRef(), bg.getBgNumber(), amount);
+
+        try {
+            List<User> opsUsers = userRepository.findByRole("OPERATIONS");
+            List<Long> opsUserIds = opsUsers.stream().map(User::getId).collect(Collectors.toList());
+            notificationService.broadcastNotification(
+                    opsUserIds,
+                    "BG Claim Filed",
+                    "A claim " + saved.getClaimRef() + " of " + amount + " " + bg.getCurrency() + " has been filed against Bank Guarantee " + bg.getBgNumber() + ".",
+                    "ALERT"
+            );
+        } catch (Exception e) {
+            logger.error("Failed to send BG claim filed notification for bgId={}: {}", bg.getId(), e.getMessage(), e);
+        }
+
         return saved;
     }
 
@@ -257,6 +321,18 @@ public class BankGuaranteeServiceImpl implements BankGuaranteeService {
 
         BGClaim result = claimRepository.save(claim);
         logger.info("BG claim processed: claimRef='{}', finalStatus='{}'", claim.getClaimRef(), status);
+
+        try {
+            notificationService.sendNotification(
+                    claim.getBg().getClient().getId(),
+                    "BG Claim Processed",
+                    "The claim " + claim.getClaimRef() + " against Bank Guarantee " + claim.getBg().getBgNumber() + " has been " + statusStr + ".",
+                    "BANK_GUARANTEE"
+            );
+        } catch (Exception e) {
+            logger.error("Failed to send BG claim processed notification for claimId={}: {}", claim.getId(), e.getMessage(), e);
+        }
+
         return result;
     }
 

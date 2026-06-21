@@ -23,19 +23,22 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/bgs")
-@CrossOrigin(origins = "*")
 public class BankGuaranteeController {
 
     private static final Logger logger = LoggerFactory.getLogger(BankGuaranteeController.class);
 
-    @Autowired
-    private BankGuaranteeService bgService;
+    private final BankGuaranteeService bgService;
+    private final UserRepository userRepository;
+    private final TradeSecurityService tradeSecurityService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private TradeSecurityService tradeSecurityService;
+    public BankGuaranteeController(
+            BankGuaranteeService bgService,
+            UserRepository userRepository,
+            TradeSecurityService tradeSecurityService) {
+        this.bgService = bgService;
+        this.userRepository = userRepository;
+        this.tradeSecurityService = tradeSecurityService;
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<BankGuarantee>>> getAllBGs(Principal principal) {

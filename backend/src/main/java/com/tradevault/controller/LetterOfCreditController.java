@@ -25,22 +25,25 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/lcs")
-@CrossOrigin(origins = "*")
 public class LetterOfCreditController {
 
     private static final Logger logger = LoggerFactory.getLogger(LetterOfCreditController.class);
 
-    @Autowired
-    private LetterOfCreditService lcService;
+    private final LetterOfCreditService lcService;
+    private final UserRepository userRepository;
+    private final LCAmendmentRepository amendmentRepository;
+    private final TradeSecurityService tradeSecurityService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private LCAmendmentRepository amendmentRepository;
-
-    @Autowired
-    private TradeSecurityService tradeSecurityService;
+    public LetterOfCreditController(
+            LetterOfCreditService lcService,
+            UserRepository userRepository,
+            LCAmendmentRepository amendmentRepository,
+            TradeSecurityService tradeSecurityService) {
+        this.lcService = lcService;
+        this.userRepository = userRepository;
+        this.amendmentRepository = amendmentRepository;
+        this.tradeSecurityService = tradeSecurityService;
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<LetterOfCredit>>> getAllLCs(Principal principal) {

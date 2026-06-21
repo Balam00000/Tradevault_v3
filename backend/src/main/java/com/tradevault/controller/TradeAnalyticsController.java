@@ -6,7 +6,6 @@ import com.tradevault.repository.UserRepository;
 import com.tradevault.service.TradeAnalyticsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,14 +15,17 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/analytics")
-@CrossOrigin(origins = "*")
 public class TradeAnalyticsController {
 
-    @Autowired
-    private TradeAnalyticsService analyticsService;
+    private final TradeAnalyticsService analyticsService;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    public TradeAnalyticsController(
+            TradeAnalyticsService analyticsService,
+            UserRepository userRepository) {
+        this.analyticsService = analyticsService;
+        this.userRepository = userRepository;
+    }
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAnalyticsSummary(Principal principal) {

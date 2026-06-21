@@ -21,20 +21,23 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasRole('ADMIN')")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final CorporateClientRepository corporateClientRepository;
+    private final AuditLogService auditLogService;
 
-    @Autowired
-    private CorporateClientRepository corporateClientRepository;
-
-    @Autowired
-    private AuditLogService auditLogService;
+    public UserController(
+            UserRepository userRepository,
+            CorporateClientRepository corporateClientRepository,
+            AuditLogService auditLogService) {
+        this.userRepository = userRepository;
+        this.corporateClientRepository = corporateClientRepository;
+        this.auditLogService = auditLogService;
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<User>>> getAllUsers(Principal principal) {

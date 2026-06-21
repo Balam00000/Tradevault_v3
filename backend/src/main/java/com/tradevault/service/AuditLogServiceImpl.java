@@ -15,8 +15,11 @@ public class AuditLogServiceImpl implements AuditLogService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuditLogServiceImpl.class);
 
-    @Autowired
-    private AuditLogRepository auditLogRepository;
+    private final AuditLogRepository auditLogRepository;
+
+    public AuditLogServiceImpl(AuditLogRepository auditLogRepository) {
+        this.auditLogRepository = auditLogRepository;
+    }
 
     @Transactional
     public void log(Long userId, String username, String action, String details, String ipAddress) {

@@ -22,22 +22,25 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/corporates")
-@CrossOrigin(origins = "*")
 public class CorporateController {
 
     private static final Logger logger = LoggerFactory.getLogger(CorporateController.class);
 
-    @Autowired
-    private CorporateClientRepository clientRepository;
+    private final CorporateClientRepository clientRepository;
+    private final CreditFacilityRepository facilityRepository;
+    private final UserRepository userRepository;
+    private final TradeSecurityService tradeSecurityService;
 
-    @Autowired
-    private CreditFacilityRepository facilityRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private TradeSecurityService tradeSecurityService;
+    public CorporateController(
+            CorporateClientRepository clientRepository,
+            CreditFacilityRepository facilityRepository,
+            UserRepository userRepository,
+            TradeSecurityService tradeSecurityService) {
+        this.clientRepository = clientRepository;
+        this.facilityRepository = facilityRepository;
+        this.userRepository = userRepository;
+        this.tradeSecurityService = tradeSecurityService;
+    }
 
     // ─── Auth helpers ─────────────────────────────────────────────────────────
 

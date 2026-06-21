@@ -33,14 +33,18 @@ public class ExpiryAlertScheduler {
     private static final int LC_ALERT_DAYS  = 7;
     private static final int BG_ALERT_DAYS  = 14;
 
-    @Autowired
-    private LetterOfCreditRepository lcRepository;
+    private final LetterOfCreditRepository lcRepository;
+    private final BankGuaranteeRepository bgRepository;
+    private final NotificationService notificationService;
 
-    @Autowired
-    private BankGuaranteeRepository bgRepository;
-
-    @Autowired
-    private NotificationService notificationService;
+    public ExpiryAlertScheduler(
+            LetterOfCreditRepository lcRepository,
+            BankGuaranteeRepository bgRepository,
+            NotificationService notificationService) {
+        this.lcRepository = lcRepository;
+        this.bgRepository = bgRepository;
+        this.notificationService = notificationService;
+    }
 
     // ─── LC Expiry Alert Job ──────────────────────────────────────────────────
 

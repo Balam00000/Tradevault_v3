@@ -2,30 +2,42 @@ package com.tradevault.service;
 
 import com.tradevault.entity.ComplianceCase;
 import com.tradevault.entity.SanctionsScreening;
+import com.tradevault.entity.User;
 import com.tradevault.entity.enums.ScreeningEntityType;
 import com.tradevault.entity.enums.SanctionsScreeningStatus;
 import com.tradevault.entity.enums.ComplianceCaseStatus;
 import com.tradevault.repository.ComplianceCaseRepository;
 import com.tradevault.repository.SanctionsScreeningRepository;
+import com.tradevault.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SanctionsScreeningServiceImpl implements SanctionsScreeningService {
 
     private static final Logger logger = LoggerFactory.getLogger(SanctionsScreeningServiceImpl.class);
 
-    @Autowired
-    private SanctionsScreeningRepository screeningRepository;
+    private final SanctionsScreeningRepository screeningRepository;
+    private final ComplianceCaseRepository caseRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    @Autowired
-    private ComplianceCaseRepository caseRepository;
+    public SanctionsScreeningServiceImpl(
+            SanctionsScreeningRepository screeningRepository,
+            ComplianceCaseRepository caseRepository,
+            UserRepository userRepository,
+            NotificationService notificationService) {
+        this.screeningRepository = screeningRepository;
+        this.caseRepository = caseRepository;
+        this.userRepository = userRepository;
+        this.notificationService = notificationService;
+    }
 
     // ─── Screen Entity ────────────────────────────────────────────────────────
 
@@ -85,7 +97,6 @@ public class SanctionsScreeningServiceImpl implements SanctionsScreeningService 
         logger.info("Sanctions screening result persisted: screeningId={}, status='{}', score={}, source='{}', txId='{}'",
                 screening.getId(), status, score, source, txId);
 
-        // Auto-create compliance case if FLAGGED
         if (status == SanctionsScreeningStatus.FLAGGED) {
             logger.warn("Creating compliance case for FLAGGED screening: screeningId={}, entityName='{}', txId='{}'",
                     screening.getId(), entityName, txId);
@@ -97,6 +108,19 @@ public class SanctionsScreeningServiceImpl implements SanctionsScreeningService 
             ComplianceCase savedCase = caseRepository.save(compCase);
             logger.warn("Compliance case auto-created: caseId={} for screeningId={}, entityName='{}'",
                     savedCase.getId(), screening.getId(), entityName);
+
+            try {
+                List<User> complianceUsers = userRepository.findByRole("COMPLIANCE");
+                List<Long> complianceUserIds = complianceUsers.stream().map(User::getId).collect(Collectors.toList());
+                notificationService.broadcastNotification(
+                        complianceUserIds,
+                        "Compliance Case Raised",
+                        "A compliance case has been raised due to a flagged sanctions screening for entity '" + entityName + "' (" + txType + " Ref: " + txId + ").",
+                        "COMPLIANCE"
+                );
+            } catch (Exception e) {
+                logger.error("Failed to send compliance notification for screeningId={}: {}", screening.getId(), e.getMessage(), e);
+            }
         }
 
         return screening;

@@ -11,6 +11,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
+import java.util.List;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +47,12 @@ public class BankGuaranteeServiceTest {
 
     @Mock
     private SanctionsScreeningRepository sanctionsScreeningRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private BankGuaranteeServiceImpl bgService;
@@ -141,6 +150,7 @@ public class BankGuaranteeServiceTest {
     void submitForApproval_success() {
         when(bgRepository.findById(10L)).thenReturn(Optional.of(bg));
         when(bgRepository.save(any(BankGuarantee.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findByRole("OPERATIONS")).thenReturn(Collections.emptyList());
 
         BankGuarantee updated = bgService.submitForApproval(10L, "testuser");
 
@@ -160,6 +170,7 @@ public class BankGuaranteeServiceTest {
     void fileClaim_success() {
         when(bgRepository.findById(10L)).thenReturn(Optional.of(bg));
         when(claimRepository.save(any(BGClaim.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findByRole("OPERATIONS")).thenReturn(Collections.emptyList());
 
         BGClaim claim = bgService.fileClaim(10L, new BigDecimal("50000.00"), "Wire details", "testuser");
 

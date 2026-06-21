@@ -17,14 +17,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/compliance")
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasAnyRole('COMPLIANCE', 'ADMIN')")
 public class ComplianceController {
 
     private static final Logger logger = LoggerFactory.getLogger(ComplianceController.class);
 
-    @Autowired
-    private SanctionsScreeningService sanctionsScreeningService;
+    private final SanctionsScreeningService sanctionsScreeningService;
+
+    public ComplianceController(SanctionsScreeningService sanctionsScreeningService) {
+        this.sanctionsScreeningService = sanctionsScreeningService;
+    }
 
     @GetMapping("/screenings")
     public ResponseEntity<ApiResponse<List<SanctionsScreening>>> getAllScreenings(Principal principal) {

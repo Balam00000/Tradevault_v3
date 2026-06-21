@@ -15,14 +15,16 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/reports")
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasAnyRole('ADMIN', 'TREASURY', 'OPERATIONS')")
 public class TradeReportController {
 
     private static final Logger logger = LoggerFactory.getLogger(TradeReportController.class);
 
-    @Autowired
-    private TradeReportService tradeReportService;
+    private final TradeReportService tradeReportService;
+
+    public TradeReportController(TradeReportService tradeReportService) {
+        this.tradeReportService = tradeReportService;
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<TradeReport>>> getAllReports() {

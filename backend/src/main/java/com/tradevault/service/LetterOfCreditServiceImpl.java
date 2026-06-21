@@ -23,32 +23,36 @@ public class LetterOfCreditServiceImpl implements LetterOfCreditService {
 
     private static final Logger logger = LoggerFactory.getLogger(LetterOfCreditServiceImpl.class);
 
-    @Autowired
-    private LetterOfCreditRepository lcRepository;
+    private final LetterOfCreditRepository lcRepository;
+    private final CreditFacilityRepository facilityRepository;
+    private final CorporateClientRepository clientRepository;
+    private final LCAmendmentRepository amendmentRepository;
+    private final LCDrawingRepository drawingRepository;
+    private final AuditLogService auditLogService;
+    private final SanctionsScreeningService sanctionsScreeningService;
+    private final SanctionsScreeningRepository sanctionsScreeningRepository;
+    private final NotificationRepository notificationRepository;
 
-    @Autowired
-    private CreditFacilityRepository facilityRepository;
-
-    @Autowired
-    private CorporateClientRepository clientRepository;
-
-    @Autowired
-    private LCAmendmentRepository amendmentRepository;
-
-    @Autowired
-    private LCDrawingRepository drawingRepository;
-
-    @Autowired
-    private AuditLogService auditLogService;
-
-    @Autowired
-    private SanctionsScreeningService sanctionsScreeningService;
-
-    @Autowired
-    private SanctionsScreeningRepository sanctionsScreeningRepository;
-
-    @Autowired
-    private NotificationRepository notificationRepository;
+    public LetterOfCreditServiceImpl(
+            LetterOfCreditRepository lcRepository,
+            CreditFacilityRepository facilityRepository,
+            CorporateClientRepository clientRepository,
+            LCAmendmentRepository amendmentRepository,
+            LCDrawingRepository drawingRepository,
+            AuditLogService auditLogService,
+            SanctionsScreeningService sanctionsScreeningService,
+            SanctionsScreeningRepository sanctionsScreeningRepository,
+            NotificationRepository notificationRepository) {
+        this.lcRepository = lcRepository;
+        this.facilityRepository = facilityRepository;
+        this.clientRepository = clientRepository;
+        this.amendmentRepository = amendmentRepository;
+        this.drawingRepository = drawingRepository;
+        this.auditLogService = auditLogService;
+        this.sanctionsScreeningService = sanctionsScreeningService;
+        this.sanctionsScreeningRepository = sanctionsScreeningRepository;
+        this.notificationRepository = notificationRepository;
+    }
 
     // ─── Read Operations ─────────────────────────────────────────────────────
 
@@ -175,7 +179,6 @@ public class LetterOfCreditServiceImpl implements LetterOfCreditService {
             facilityRepository.save(facility);
             logger.info("Facility limit updated: facilityId={}, newUtilized={}", facility.getId(), facility.getUtilizedAmount());
 
-            // Notify client
             notificationRepository.save(new Notification(
                     lc.getClient().getId(),
                     "Letter of Credit Active",

@@ -19,26 +19,30 @@ public class TradeReportServiceImpl implements TradeReportService {
 
     private static final Logger logger = LoggerFactory.getLogger(TradeReportServiceImpl.class);
 
-    @Autowired
-    private TradeReportRepository tradeReportRepository;
+    private final TradeReportRepository tradeReportRepository;
+    private final LetterOfCreditRepository letterOfCreditRepository;
+    private final BankGuaranteeRepository bankGuaranteeRepository;
+    private final ExportBillRepository exportBillRepository;
+    private final CreditFacilityRepository creditFacilityRepository;
+    private final ComplianceCaseRepository complianceCaseRepository;
+    private final LCDrawingRepository lcDrawingRepository;
 
-    @Autowired
-    private LetterOfCreditRepository letterOfCreditRepository;
-
-    @Autowired
-    private BankGuaranteeRepository bankGuaranteeRepository;
-
-    @Autowired
-    private ExportBillRepository exportBillRepository;
-
-    @Autowired
-    private CreditFacilityRepository creditFacilityRepository;
-
-    @Autowired
-    private ComplianceCaseRepository complianceCaseRepository;
-
-    @Autowired
-    private LCDrawingRepository lcDrawingRepository;
+    public TradeReportServiceImpl(
+            TradeReportRepository tradeReportRepository,
+            LetterOfCreditRepository letterOfCreditRepository,
+            BankGuaranteeRepository bankGuaranteeRepository,
+            ExportBillRepository exportBillRepository,
+            CreditFacilityRepository creditFacilityRepository,
+            ComplianceCaseRepository complianceCaseRepository,
+            LCDrawingRepository lcDrawingRepository) {
+        this.tradeReportRepository = tradeReportRepository;
+        this.letterOfCreditRepository = letterOfCreditRepository;
+        this.bankGuaranteeRepository = bankGuaranteeRepository;
+        this.exportBillRepository = exportBillRepository;
+        this.creditFacilityRepository = creditFacilityRepository;
+        this.complianceCaseRepository = complianceCaseRepository;
+        this.lcDrawingRepository = lcDrawingRepository;
+    }
 
     public List<TradeReport> getAllReports() {
         logger.debug("Retrieving all trade reports");

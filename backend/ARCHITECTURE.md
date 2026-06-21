@@ -26,7 +26,7 @@ sequenceDiagram
 ### 1.1 Security Entry & Configuration
 *   **Security Configuration ([SecurityConfig.java](file:///d:/TRADE-VAULT/backend/src/main/java/com/tradevault/config/SecurityConfig.java))**:
     *   Defines HTTP endpoint permissions.
-    *   Integrates CORS, state-less session management, and registers the JWT filter.
+    *   Enforces state-less session management and registers the JWT filter.
     *   Enforces Role-Based Access Control (RBAC).
 *   **Authentication Filter ([JwtAuthenticationFilter.java](file:///d:/TRADE-VAULT/backend/src/main/java/com/tradevault/config/JwtAuthenticationFilter.java))**:
     *   Intercepts every API call.

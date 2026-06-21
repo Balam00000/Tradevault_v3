@@ -23,19 +23,22 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/bills")
-@CrossOrigin(origins = "*")
 public class ExportBillController {
 
     private static final Logger logger = LoggerFactory.getLogger(ExportBillController.class);
 
-    @Autowired
-    private ExportBillService billService;
+    private final ExportBillService billService;
+    private final UserRepository userRepository;
+    private final TradeSecurityService tradeSecurityService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private TradeSecurityService tradeSecurityService;
+    public ExportBillController(
+            ExportBillService billService,
+            UserRepository userRepository,
+            TradeSecurityService tradeSecurityService) {
+        this.billService = billService;
+        this.userRepository = userRepository;
+        this.tradeSecurityService = tradeSecurityService;
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<ExportBill>>> getAllBills(Principal principal) {

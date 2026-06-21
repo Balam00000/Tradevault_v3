@@ -7,6 +7,7 @@ import com.tradevault.entity.enums.SanctionsScreeningStatus;
 import com.tradevault.entity.enums.ScreeningEntityType;
 import com.tradevault.repository.ComplianceCaseRepository;
 import com.tradevault.repository.SanctionsScreeningRepository;
+import com.tradevault.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,6 +32,12 @@ public class SanctionsScreeningServiceTest {
 
     @Mock
     private ComplianceCaseRepository caseRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private SanctionsScreeningServiceImpl sanctionsScreeningService;
@@ -66,6 +75,7 @@ public class SanctionsScreeningServiceTest {
             c.setId(200L);
             return c;
         });
+        when(userRepository.findByRole("COMPLIANCE")).thenReturn(Collections.emptyList());
 
         SanctionsScreening result = sanctionsScreeningService.screenEntity("Syria Exports Ltd", "BENEFICIARY", "LC", "LC-99999");
 

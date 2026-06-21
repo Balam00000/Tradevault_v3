@@ -19,19 +19,22 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/notifications")
-@CrossOrigin(origins = "*")
 public class NotificationController {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+    private final TradeSecurityService tradeSecurityService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private TradeSecurityService tradeSecurityService;
+    public NotificationController(
+            NotificationRepository notificationRepository,
+            UserRepository userRepository,
+            TradeSecurityService tradeSecurityService) {
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+        this.tradeSecurityService = tradeSecurityService;
+    }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<List<Notification>>> getNotifications(@PathVariable Long userId,

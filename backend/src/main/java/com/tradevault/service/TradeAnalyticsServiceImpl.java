@@ -18,23 +18,27 @@ public class TradeAnalyticsServiceImpl implements TradeAnalyticsService {
 
     private static final Logger logger = LoggerFactory.getLogger(TradeAnalyticsServiceImpl.class);
 
-    @Autowired
-    private LetterOfCreditRepository lcRepository;
+    private final LetterOfCreditRepository lcRepository;
+    private final BankGuaranteeRepository bgRepository;
+    private final ExportBillRepository billRepository;
+    private final CreditFacilityRepository facilityRepository;
+    private final SanctionsScreeningRepository screeningRepository;
+    private final ComplianceCaseRepository caseRepository;
 
-    @Autowired
-    private BankGuaranteeRepository bgRepository;
-
-    @Autowired
-    private ExportBillRepository billRepository;
-
-    @Autowired
-    private CreditFacilityRepository facilityRepository;
-
-    @Autowired
-    private SanctionsScreeningRepository screeningRepository;
-
-    @Autowired
-    private ComplianceCaseRepository caseRepository;
+    public TradeAnalyticsServiceImpl(
+            LetterOfCreditRepository lcRepository,
+            BankGuaranteeRepository bgRepository,
+            ExportBillRepository billRepository,
+            CreditFacilityRepository facilityRepository,
+            SanctionsScreeningRepository screeningRepository,
+            ComplianceCaseRepository caseRepository) {
+        this.lcRepository = lcRepository;
+        this.bgRepository = bgRepository;
+        this.billRepository = billRepository;
+        this.facilityRepository = facilityRepository;
+        this.screeningRepository = screeningRepository;
+        this.caseRepository = caseRepository;
+    }
 
     // ─── Global Analytics Summary ─────────────────────────────────────────────
 

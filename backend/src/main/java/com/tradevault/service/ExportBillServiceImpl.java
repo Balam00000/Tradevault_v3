@@ -21,23 +21,27 @@ public class ExportBillServiceImpl implements ExportBillService {
 
     private static final Logger logger = LoggerFactory.getLogger(ExportBillServiceImpl.class);
 
-    @Autowired
-    private ExportBillRepository billRepository;
+    private final ExportBillRepository billRepository;
+    private final CollectionInstructionRepository instructionRepository;
+    private final CorporateClientRepository clientRepository;
+    private final AuditLogService auditLogService;
+    private final SanctionsScreeningService sanctionsScreeningService;
+    private final SanctionsScreeningRepository sanctionsScreeningRepository;
 
-    @Autowired
-    private CollectionInstructionRepository instructionRepository;
-
-    @Autowired
-    private CorporateClientRepository clientRepository;
-
-    @Autowired
-    private AuditLogService auditLogService;
-
-    @Autowired
-    private SanctionsScreeningService sanctionsScreeningService;
-
-    @Autowired
-    private SanctionsScreeningRepository sanctionsScreeningRepository;
+    public ExportBillServiceImpl(
+            ExportBillRepository billRepository,
+            CollectionInstructionRepository instructionRepository,
+            CorporateClientRepository clientRepository,
+            AuditLogService auditLogService,
+            SanctionsScreeningService sanctionsScreeningService,
+            SanctionsScreeningRepository sanctionsScreeningRepository) {
+        this.billRepository = billRepository;
+        this.instructionRepository = instructionRepository;
+        this.clientRepository = clientRepository;
+        this.auditLogService = auditLogService;
+        this.sanctionsScreeningService = sanctionsScreeningService;
+        this.sanctionsScreeningRepository = sanctionsScreeningRepository;
+    }
 
     // ─── Export Bill Read Operations ─────────────────────────────────────────
 

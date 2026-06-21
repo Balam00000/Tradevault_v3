@@ -2,6 +2,7 @@ package com.tradevault.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class RegisterRequest {
@@ -22,7 +23,8 @@ public class RegisterRequest {
     private String fullName;
 
     @NotBlank(message = "Role is required")
-    private String role; // CLIENT, OPERATIONS, RELATIONSHIP_MANAGER, TREASURY, COMPLIANCE, ADMIN
+    @Pattern(regexp = "^(CLIENT|OPERATIONS|RELATIONSHIP_MANAGER|TREASURY|COMPLIANCE|ADMIN)$", message = "Role must be one of: CLIENT, OPERATIONS, RELATIONSHIP_MANAGER, TREASURY, COMPLIANCE, ADMIN")
+    private String role;
 
     public RegisterRequest() {}
 
